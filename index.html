@@ -152,9 +152,6 @@
     <div class="logo">🥦 Verd<em>App</em></div>
     <div class="hdr-r">
       <div class="hdr-d" id="hdr-d">—</div>
-      <button id="install-btn" class="iBtn" onclick="instalarApp()"
-        style="display:none;background:var(--accent);color:#111;font-size:.7rem;font-weight:700;width:auto;padding:0 10px;font-family:var(--mono)"
-        title="Instalar app">📲 INSTALAR</button>
       <button class="iBtn" onclick="toggleTheme()">☀️</button>
     </div>
   </header>
@@ -166,7 +163,6 @@
     <button class="tab"     onclick="go('ventas')">💰 VENTAS</button>
     <button class="tab"     onclick="go('resumen')">📊 RESUMEN</button>
     <button class="tab"     onclick="go('pendientes')">⏳ PEND.</button>
-    <button class="tab"     onclick="go('balance')">📈 BALANCE</button>
     <button class="tab"     onclick="go('memoria')">🧠 MEMORIA</button>
   </nav>
   <div id="pg"></div>
@@ -241,95 +237,23 @@ function loadAll() {
   if(!pesoRows.length) initPesoRows();
 }
 
-/* ── Guardar precio y TIPO aprendido ── */
-function aprenderPrecio(nombre, precioUnit, tipo) {
+/* ── Guardar precio aprendido ── */
+function aprenderPrecio(nombre, precioUnit) {
   if(!nombre || !precioUnit || precioUnit <= 0) return;
-  const key = normalizarTexto(nombre).slice(0,20);
+  const key = normalizarTexto(nombre).slice(0,20); // clave normalizada
   if(!priceMemory[key]) priceMemory[key] = {precios:[], total:0};
   const mem = priceMemory[key];
-  // Guardar últimos 10 precios
+  // Guardar últimos 10 precios (historial deslizante)
   mem.precios.push({precio: precioUnit, fecha: hoy()});
   if(mem.precios.length > 10) mem.precios.shift();
-  // Recalcular min, max, avg
+  // Recalcular min, max, avg con los datos reales
   const vals = mem.precios.map(p=>p.precio);
   mem.min = Math.min(...vals);
   mem.max = Math.max(...vals);
   mem.avg = Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
   mem.total = (mem.total||0) + 1;
-  // Aprender el tipo (caja/kilo/unidad) — guardar el más frecuente
-  if(tipo && tipo !== 'unidad') {
-    if(!mem.tipos) mem.tipos = {};
-    mem.tipos[tipo] = (mem.tipos[tipo]||0) + 1;
-    // El tipo aprendido es el más frecuente
-    mem.tipoDefault = Object.entries(mem.tipos).sort((a,b)=>b[1]-a[1])[0][0];
-  }
+  // Guardar en localStorage
   localStorage.setItem(KEY_PRECIOS, JSON.stringify(priceMemory));
-}
-
-/* ── Obtener tipo aprendido para un producto ── */
-function getTipoAprendido(nombre) {
-  const key = normalizarTexto(nombre).slice(0,20);
-  const mem = priceMemory[key];
-  return mem && mem.tipoDefault ? mem.tipoDefault : null;
-}
-
-/* ── Detectar variación de precio ≥ 20% ── */
-function detectarVariacion(nombre, precioNuevo){
-  if(!precioNuevo || precioNuevo <= 0) return null;
-  const key = normalizarTexto(nombre).slice(0,20);
-  const mem = priceMemory[key];
-  if(!mem || mem.precios.length < 1) return null;
-  const precioAnterior = mem.precios[mem.precios.length-1].precio;
-  if(!precioAnterior) return null;
-  const variacion = ((precioNuevo - precioAnterior) / precioAnterior) * 100;
-  if(Math.abs(variacion) < 20) return null;
-  return {
-    anterior: precioAnterior,
-    nuevo: precioNuevo,
-    pct: Math.round(variacion),
-    sube: variacion > 0
-  };
-}
-
-/* ── Generar resumen de alertas al abrir la app ── */
-function checkAlertasPrecios(){
-  // Solo mostrar una vez por sesión
-  if(window._alertasChecked) return;
-  window._alertasChecked = true;
-  const alertas = [];
-  // Revisar últimas compras (últimas 48hs)
-  const ayer = new Date(); ayer.setDate(ayer.getDate()-1);
-  const ayerISO = toISO(ayer);
-  db.compras.filter(c=>c.fecha>=ayerISO&&!c.pendiente&&c.precioUnit>0).forEach(c=>{
-    const v = detectarVariacion(c.nombre, c.precioUnit);
-    if(v) alertas.push({nombre:c.nombre, ...v});
-  });
-  if(!alertas.length) return;
-  // Mostrar banner de alertas
-  const html = alertas.map(a=>
-    `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
-      <span style="font-size:.82rem">${a.nombre}</span>
-      <span style="font-family:var(--mono);font-size:.78rem;color:${a.sube?'var(--danger)':'var(--accent)'}">
-        ${a.sube?'▲':'▼'} ${Math.abs(a.pct)}% · ${fm(a.anterior)} → ${fm(a.nuevo)}
-      </span>
-    </div>`
-  ).join('');
-  // Insertar banner al principio del contenido
-  setTimeout(()=>{
-    const pg = document.getElementById('pg');
-    if(!pg) return;
-    const banner = document.createElement('div');
-    banner.style.cssText='background:#2e1500;border:1px solid var(--warn);border-radius:14px;padding:14px;margin-bottom:14px';
-    banner.innerHTML=`
-      <div style="font-family:var(--mono);font-size:.72rem;color:var(--warn);font-weight:700;margin-bottom:8px;letter-spacing:1px">
-        ⚠️ VARIACIONES DE PRECIO ≥20% (últimas 48hs)
-      </div>
-      ${html}
-      <button onclick="this.parentElement.remove()" style="margin-top:10px;background:var(--bg3);border:1px solid var(--border);color:var(--txt3);padding:6px 12px;border-radius:8px;font-family:var(--mono);font-size:.7rem;cursor:pointer;width:100%">
-        ENTENDIDO ✓
-      </button>`;
-    pg.insertBefore(banner, pg.firstChild);
-  }, 500);
 }
 
 /* ── Obtener hint aprendido (tiene prioridad sobre rangos fijos) ── */
@@ -421,8 +345,6 @@ const PRICE_HINTS = [
   {keys:['zapallo'], min:180000, max:280000},
   {keys:['repollo morado'], min:120000, max:220000},
   {keys:['repollo'], min:100000, max:180000},
-  {keys:['mandarina argentina'], min:160000, max:250000},
-  {keys:['mandarina bahia'], min:160000, max:250000},
   {keys:['mandarina'], min:160000, max:240000},
   {keys:['naranja'], min:160000, max:230000},
   {keys:['manzana roja grande','manzana roja'], min:280000, max:360000},
@@ -430,15 +352,12 @@ const PRICE_HINTS = [
   {keys:['pera'], min:160000, max:220000},
   {keys:['uva'], min:180000, max:260000},
   {keys:['ciruela'], min:180000, max:260000},
-  {keys:['pina grande','pina'], min:80000, max:180000},
+  {keys:['pina grande','pina'], min:120000, max:180000},
   {keys:['kiwi'], min:250000, max:350000},
   {keys:['melon nacional'], min:45000, max:65000},
-  {keys:['melon japones'], min:150000, max:250000},
-  {keys:['melon brasil'], min:120000, max:200000},
+  {keys:['melon brasil','melon japones'], min:120000, max:200000},
   {keys:['mburukuja'], min:120000, max:180000},
-  {keys:['mamon brasil grande'], min:160000, max:220000},
-  {keys:['mamon brasil chico'], min:100000, max:150000},
-  {keys:['mamon brasil'], min:100000, max:220000},
+  {keys:['mamon brasil'], min:120000, max:180000},
   {keys:['mamon nac','mamon nacional'], min:60000, max:90000},
   {keys:['mandioca','mandio'], min:80000, max:100000},
   {keys:['limon'], min:60000, max:100000},
@@ -448,7 +367,6 @@ const PRICE_HINTS = [
   {keys:['zapallito'], min:70000, max:110000},
   {keys:['lechuga repollada','lechuga hidroponica'], min:80000, max:140000},
   {keys:['choclo'], min:10000, max:20000},
-  {keys:['poroto rojo','poroto'], min:10000, max:25000},
   {keys:['ajo'], min:150000, max:220000},
   {keys:['acelga'], min:25000, max:45000},
   {keys:['kuratu','perejil'], min:7000, max:25000},
@@ -561,7 +479,7 @@ function updateHdr(){
 let tab='pesos';
 function go(t){
   tab=t;
-  const ns=['pesos','ia','compras','gastos','ventas','resumen','pendientes','balance','memoria'];
+  const ns=['pesos','ia','compras','gastos','ventas','resumen','pendientes','memoria'];
   document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('on',ns[i]===t));
   render();
 }
@@ -575,7 +493,6 @@ function render(){
   else if(tab==='ventas') p.innerHTML=pgVentas();
   else if(tab==='resumen')p.innerHTML=pgResumen();
   else if(tab==='pendientes')p.innerHTML=pgPendientes();
-  else if(tab==='balance')p.innerHTML=pgBalance();
   else if(tab==='memoria')p.innerHTML=pgMemoria();
   bindForms();
 }
@@ -706,7 +623,7 @@ function aplicarPreciosBloque(){
     const valor=nums[nums.length-1];
     const nombreParte=limpio
       .replace(/[\d.,]+/g,' ')
-      .replace(/\b(kilo|kilos|kg|caja|cajas|unidad|unidades|und|docena|docenas|uno|una|lindo|color|bahia)\b/g,' ')
+      .replace(/\b(kilo|kilos|kg|caja|cajas|unidad|unidades|und|docena|docenas|uno|una|lindo|color|bahia|grande|chico|nacional|brasil)\b/g,' ')
       .replace(/\s+/g,' ')
       .trim();
     if(!nombreParte)return;
@@ -951,10 +868,7 @@ async function procesarTextoIA(texto){
       '- "dañado" → estado=dañado\n'+
       '- "faltan" → estado=faltante\n'+
       '- Día de semana mencionado → campo dia\n'+
-      '- Nombres en minúsculas CONSERVANDO el nombre completo: variedad, origen y tamaño\n'+
-      '- NUNCA abreviés: "mamon brasil grande" no es "mamon", "zapallo brasil" no es "zapallo"\n'+
-      '- Ejemplos correctos: mamon brasil grande, mamon brasil chico, mamon nacional,\n'+
-      '  zapallo brasil, melon nacional, melon japones, mandarina argentina, banana de oro\n\n'+
+      '- Nombres normalizados en minúsculas\n\n'+
       'LISTA:\n'+texto+'\n\n'+
       'SOLO JSON puro sin texto ni backticks:\n'+
       '[{"nombre":"tomate","cantidad":15,"tipo":"caja","precioUnit":150000,"precioTotal":2250000,"tipo_precio":"unitario","confianza":"alta","pendiente":false,"estado":"normal","dia":null}]';
@@ -993,22 +907,9 @@ function parsearLocal(texto){
     const tm={kilo:'kilo',kilos:'kilo',kg:'kilo',caja:'caja',cajas:'caja',unidad:'unidad',und:'unidad',paquete:'unidad',paquetes:'unidad',docena:'unidad',docenas:'unidad'};
     let tipo='unidad';
     for(const[k,v]of Object.entries(tm)){if(t.includes(k)){tipo=v;break;}}
-    // Si dice explícitamente "kilos" o "kg" entre cantidad y precio → tipo kilo
-    const tieneKilosExplicito = /\d+\s*(kilos?|kg)\s*\d+/i.test(l);
-    if(tieneKilosExplicito) tipo='kilo';
-    // Solo eliminar palabras que no aportan al nombre del producto
-    // IMPORTANTE: 'nacional','brasil','grande','chico','japones' se CONSERVAN
-    // porque diferencian variantes (mamón nacional vs mamón brasil grande)
-    // Solo eliminar palabras de medida — NUNCA palabras descriptoras del producto
-    const reserv=new Set(['kilo','kilos','kg','caja','cajas','unidad','unidades','und',
-      'paquete','paquetes','docena','docenas','sin','precio','pendiente','danado',
-      'falta','faltante','de','del','la','el','los','las','uno','una',...DS]);
+    const reserv=new Set(['kilo','kilos','kg','caja','cajas','unidad','unidades','und','paquete','paquetes','docena','docenas','sin','precio','pendiente','danado','falta','faltante','de','del','la','el','los','las','uno','una','con','color','chico','grande','nacional','brasil','bahia','lindo',...DS]);
     const nombreTokens=t.split(/\s+/).filter(x=>!reserv.has(x)&&!/^\d+(\.\d+)?$/.test(x)&&!DS.some(d=>x.startsWith(d))&&x.length>1);
-    // Reconstruir nombre completo preservando orden original
     const nombre=nombreTokens.join(' ').trim()||'producto';
-    // Usar tipo aprendido si no se detectó explícitamente en el texto
-    const tipoExplicito=Object.keys(tm).some(k=>t.includes(k));
-    if(!tipoExplicito){ const tipoMem=getTipoAprendido(nombre); if(tipoMem) tipo=tipoMem; }
     const nums=(t.match(/\d+(\.\d+)?/g)||[]).map(Number);
     let cantidad=1,precioUnit=0,precioTotal=0,tipo_precio='unitario',confianza='media';
     if(sinPrecio){
@@ -1079,16 +980,11 @@ function mostrarPrevTexto(items){
       : it.confianza==='media'
       ? 'background:rgba(251,191,36,.05);border-left:3px solid var(--warn)'
       : 'border-left:3px solid transparent';
-    const variacion = detectarVariacion(it.nombre, it.precioUnit);
-    const varBadge = variacion
-      ? `<span style="background:${variacion.sube?'#2e0d0d':'#0d2e18'};color:${variacion.sube?'var(--danger)':'var(--accent)'};padding:2px 6px;border-radius:6px;font-size:.62rem;font-family:var(--mono);font-weight:700;display:block;margin-top:2px">
-          ${variacion.sube?'▲ SUBE':'▼ BAJA'} ${Math.abs(variacion.pct)}%
-        </span>` : '';
     const confBadge = it.confianza==='baja'
-      ? `<span style="background:#2e0d0d;color:var(--danger);padding:3px 7px;border-radius:8px;font-size:.65rem;font-family:var(--mono);font-weight:700">⚠️ REVISAR</span>${varBadge}`
+      ? `<span style="background:#2e0d0d;color:var(--danger);padding:3px 7px;border-radius:8px;font-size:.65rem;font-family:var(--mono);font-weight:700">⚠️ REVISAR</span>`
       : it.confianza==='media'
-      ? `<span style="background:#2e1f00;color:var(--warn);padding:3px 7px;border-radius:8px;font-size:.65rem;font-family:var(--mono);font-weight:700">~ VERIFICAR</span>${varBadge}`
-      : `<span style="background:#1a2e0d;color:#4ade80;padding:3px 7px;border-radius:8px;font-size:.65rem;font-family:var(--mono);font-weight:700">✓ OK</span>${varBadge}`;
+      ? `<span style="background:#2e1f00;color:var(--warn);padding:3px 7px;border-radius:8px;font-size:.65rem;font-family:var(--mono);font-weight:700">~ VERIFICAR</span>`
+      : `<span style="background:#1a2e0d;color:#4ade80;padding:3px 7px;border-radius:8px;font-size:.65rem;font-family:var(--mono);font-weight:700">✓ OK</span>`;
     return`<tr id="prev-row-${i}" style="${bgRow}">
     <td><input value="${it.nombre}" onchange="prevTexto[${i}].nombre=this.value" style="min-width:65px"/></td>
     <td><input type="number" value="${it.cantidad}" onchange="prevTexto[${i}].cantidad=+this.value;recalcPrevRow(${i},'cant')" style="width:46px"/></td>
@@ -1155,7 +1051,7 @@ function confirmarTexto(){
       estado:it.estado||'normal',pendiente:it.pendiente||it.precioUnit===0});
     // Aprender precio si tiene precio real (no pendiente)
     if(!it.pendiente && it.precioUnit > 0) {
-      aprenderPrecio(it.nombre, it.precioUnit, it.tipo);
+      aprenderPrecio(it.nombre, it.precioUnit);
       aprendidos++;
     }
   });
@@ -1173,101 +1069,9 @@ function onCmd(){
   else{el.style.color='var(--danger)';el.textContent='❌ '+r.msg;}
 }
 
-/* ── DESCUENTO COMPLETO: "no vino banana" ── */
-function descontarCompleto(nombre, nota){
-  const n = normalizarTexto(nombre);
-  // Buscar la compra más reciente de ese producto
-  const found = [...db.compras]
-    .reverse()
-    .filter(c => normalizarTexto(c.nombre).includes(n) || n.includes(normalizarTexto(c.nombre)));
-  if(!found.length){
-    return{ok:false,msg:`No encontré compras de "${nombre}". Verificá el nombre.`};
-  }
-  const compra = found[0];
-  // Marcar como faltante y registrar descuento
-  compra.estado = 'faltante';
-  compra.nota = nota;
-  saveDB();
-  return{ok:true,msg:`✅ "${compra.nombre}" marcado como NO VINO
-Descuento: ${fm(compra.precioTotal)} del ${lbl(compra.fecha)}`};
-}
-
-/* ── DESCUENTO POR KILO: "descompuesto 8 kilos banana" ── */
-function descontarPorKilo(nombre, kilos, nota){
-  const n = normalizarTexto(nombre);
-  let precioPorKg = 0;
-  let fuente = '';
-
-  // PASO 1: Tabla de pesos → precio/kg REAL = precioCompra ÷ pesoNeto
-  const pesoRow = pesoRows.find(r =>
-    normalizarTexto(r.producto).includes(n) || n.includes(normalizarTexto(r.producto))
-  );
-  if(pesoRow && Number(pesoRow.pesoNeto) > 0 && Number(pesoRow.precioCompra) > 0){
-    precioPorKg = Math.round(Number(pesoRow.precioCompra) / Number(pesoRow.pesoNeto));
-    fuente = pesoRow.producto + ': ' + fm(pesoRow.precioCompra) + ' / ' + pesoRow.pesoNeto + 'kg netos = ' + fm(precioPorKg) + '/kg';
-  }
-
-  // PASO 2: Última compra registrada en kilos
-  if(!precioPorKg){
-    const compraKilo = [...db.compras].reverse()
-      .find(c => normalizarTexto(c.nombre).includes(n) && c.tipo==='kilo' && !c.pendiente && c.precioUnit > 0);
-    if(compraKilo){
-      precioPorKg = compraKilo.precioUnit;
-      fuente = 'última compra en kilos: ' + fm(precioPorKg) + '/kg';
-    }
-  }
-
-  // PASO 3: Preguntar — aclarar que necesita precio POR KILO no por caja
-  if(!precioPorKg){
-    const input = prompt(
-      'No encontré precio/kg de "' + nombre + '" en tabla de pesos.\n' +
-      'Ingresá el precio por KILO en Gs.\n' +
-      '(Ej: si la caja costó 120.000 y pesa 28kg → escribí 4285)'
-    );
-    if(!input) return{ok:false,msg:'Cancelado'};
-    precioPorKg = +input.replace(/[^0-9]/g,'');
-    fuente = 'ingresado manualmente';
-    if(!precioPorKg) return{ok:false,msg:'Precio inválido'};
-  }
-
-  const montoDescuento = Math.round(precioPorKg * kilos);
-  db.compras.push({
-    id:uid(), fecha:hoy(), nombre,
-    tipo:'kilo', cantidad:kilos,
-    precioUnit:precioPorKg, precioTotal:montoDescuento,
-    estado:'dañado', pendiente:false, nota
-  });
-  saveDB();
-  return{ok:true,msg:'✅ Descuento: ' + kilos + 'kg de ' + nombre + ' × ' + fm(precioPorKg) + '/kg = ' + fm(montoDescuento) + '\n📌 ' + fuente};
-}
-
-
 function parsCmd(raw){
   const t=raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   const tks=t.split(/\s+/);
-
-  // ── NO VINO → descuento completo ───────────────────────────
-  if(t.includes('no vino')){
-    const skipNoVino = new Set(['no','vino','el','la','los','las','de','del']);
-    const nombre = tks.filter(x=>!skipNoVino.has(x)&&!/^\d+$/.test(x)).join(' ').trim();
-    if(!nombre) return{ok:false,msg:'¿Qué producto no vino? Ej: no vino banana'};
-    return descontarCompleto(nombre, raw);
-  }
-
-  // ── DESCUENTO POR KILO → descompuesto/podrido/malo + N kilos ─
-  const PALABRAS_KILO = ['descontar','desconta','descompuesto','podrido','malo','danado','dañado','descuento'];
-  const esDescuentoKilo = PALABRAS_KILO.some(p=>t.includes(p));
-  if(esDescuentoKilo){
-    const skipKilo = new Set(['descontar','desconta','descompuesto','podrido','malo','danado',
-      'dañado','descuento','kilo','kilos','kg','de','del','la','el','los','las']);
-    const nums = tks.filter(x=>/^\d+(\.\d+)?$/.test(x)).map(Number);
-    const cantKilos = nums[0]||0;
-    const nombre = tks.filter(x=>!skipKilo.has(x)&&!/^\d+(\.\d+)?$/.test(x)&&!DS.some(d=>x.startsWith(d))).join(' ').trim();
-    if(!nombre) return{ok:false,msg:'Ej: descompuesto 8 kilos banana'};
-    if(!cantKilos) return{ok:false,msg:'¿Cuántos kilos? Ej: descompuesto 8 kilos banana'};
-    return descontarPorKilo(nombre, cantKilos, raw);
-  }
-
   if(t.startsWith('agregar precio')||t.startsWith('actualizar precio')||t.startsWith('precio')){
     const nums=tks.filter(x=>/^\d+$/.test(x));
     const precio=nums.length?+nums[nums.length-1]:null;
@@ -1365,15 +1169,15 @@ function pgCompras(){
       <button class="btn bghost bsm" onclick="verTodas()">Ver todas</button>
     </div>
     <div id="borrar-fecha-btn"></div>
-    <div id="lista-c">${listaAgrupada([...db.compras].reverse())}</div>
+    <div id="lista-c">${listaC([...db.compras].reverse(),true)}</div>
   </div>`;
 }
 
 function filtrarC(){
   const f=document.getElementById('f-fecha').value;
   const lista=f?db.compras.filter(c=>c.fecha===f):[...db.compras];
-  const contenido=f?listaC([...lista].reverse(),true):listaAgrupada([...db.compras].reverse());
-  document.getElementById('lista-c').innerHTML=contenido;
+  document.getElementById('lista-c').innerHTML=listaC([...lista].reverse(),true);
+  // Mostrar botón borrar fecha si hay fecha seleccionada
   const btnEl=document.getElementById('borrar-fecha-btn');
   if(btnEl){
     if(f && lista.length){
@@ -1385,40 +1189,6 @@ function filtrarC(){
       btnEl.innerHTML='';
     }
   }
-}
-
-// Lista agrupada por fecha — para vista general sin filtro
-function listaAgrupada(lista){
-  if(!lista.length) return`<div class="empty"><div class="ico">📦</div>Sin compras</div>`;
-  // Agrupar por fecha
-  const grupos={};
-  lista.forEach(c=>{
-    if(!grupos[c.fecha]) grupos[c.fecha]=[];
-    grupos[c.fecha].push(c);
-  });
-  // Ordenar fechas más recientes primero
-  return Object.keys(grupos).sort().reverse().map(fecha=>{
-    const items=grupos[fecha];
-    const total=items.filter(c=>!c.pendiente&&c.estado!=='dañado'&&c.estado!=='faltante')
-                     .reduce((s,c)=>s+c.precioTotal,0);
-    const descuentos=items.filter(c=>c.estado==='dañado'||c.estado==='faltante')
-                          .reduce((s,c)=>s+c.precioTotal,0);
-    return`
-    <div style="margin-bottom:16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;
-        padding:8px 10px;background:var(--bg3);border-radius:10px;margin-bottom:8px">
-        <div>
-          <div style="font-family:var(--mono);font-size:.78rem;color:var(--txt2);font-weight:700">${lbl(fecha)}</div>
-          <div style="font-family:var(--mono);font-size:.67rem;color:var(--txt3)">${items.length} productos</div>
-        </div>
-        <div style="text-align:right">
-          <div style="font-family:var(--mono);font-size:.85rem;color:var(--accent)">${fm(total)}</div>
-          ${descuentos?`<div style="font-family:var(--mono);font-size:.67rem;color:var(--danger)">- ${fm(descuentos)}</div>`:''}
-        </div>
-      </div>
-      ${listaC(items,true)}
-    </div>`;
-  }).join('');
 }
 
 function verTodas(){
@@ -1476,7 +1246,7 @@ function saveEdit(){
   c.precioUnit=+document.getElementById('e-precio').value||0;
   c.precioTotal=c.precioUnit*c.cantidad;c.pendiente=c.precioUnit===0;
   // Aprender el precio corregido manualmente
-  if(c.precioUnit>0) aprenderPrecio(c.nombre, c.precioUnit, c.tipo);
+  if(c.precioUnit>0) aprenderPrecio(c.nombre, c.precioUnit);
   saveDB();document.getElementById('m-edit').style.display='none';toast('✅ Actualizado · 🧠 Precio aprendido');render();
 }
 
@@ -1518,17 +1288,11 @@ function delG(id){if(!confirm('¿Eliminar?'))return;db.gastos=db.gastos.filter(g
    VENTAS
 ═══════════════════════════════════════════════════════ */
 function pgVentas(){
-  const fechaSel=window.ventaFechaActual||hoy();
-  const vh=db.ventas.find(v=>v.fecha===fechaSel)||{efectivo:0,transferencia:0,pos:0,total:0};
+  const vh=db.ventas.find(v=>v.fecha===hoy())||{efectivo:0,transferencia:0,pos:0,total:0};
   return`
   <div class="card">
-    <div class="ct">💰 REGISTRAR VENTA</div>
+    <div class="ct">💰 VENTAS DEL DÍA</div>
     <form id="form-venta">
-      <div style="margin-bottom:10px">
-        <label>FECHA</label>
-        <input type="date" id="v-fecha" name="fecha" value="${fechaSel}"
-          onchange="window.ventaFechaActual=this.value;actualizarResumenVenta(this.value)"/>
-      </div>
       <div class="g3" style="margin-bottom:14px">
         <div><label>EFECTIVO</label><input id="v-ef" name="efectivo" type="number" min="0" placeholder="0"/></div>
         <div><label>TRANSFERENCIA</label><input id="v-tf" name="transferencia" type="number" min="0" placeholder="0"/></div>
@@ -1541,67 +1305,31 @@ function pgVentas(){
       <button type="submit" class="btn bg bfull">REGISTRAR VENTA</button>
     </form>
   </div>
-  <div class="card" id="resumen-venta-dia">
-    <div class="ct">📊 ${lbl(fechaSel)}</div>
+  <div class="card">
+    <div class="ct">📊 HOY – ${lbl(hoy())}</div>
     <div class="sr"><span class="sl">Efectivo</span><span class="sv">${fm(vh.efectivo)}</span></div>
     <div class="sr"><span class="sl">Transferencia</span><span class="sv">${fm(vh.transferencia)}</span></div>
     <div class="sr"><span class="sl">POS</span><span class="sv">${fm(vh.pos)}</span></div>
-    <div class="sr"><span class="sl" style="font-weight:700">TOTAL</span>
-      <span class="sv pos" style="font-size:1.2rem">${fm(vh.total)}</span></div>
+    <div class="sr"><span class="sl" style="font-weight:700">TOTAL HOY</span><span class="sv pos" style="font-size:1.2rem">${fm(vh.total)}</span></div>
   </div>
   <div class="card">
     <div class="ct">📋 HISTORIAL</div>
     ${[...db.ventas].reverse().map(v=>`<div class="li">
-      <div class="lim"><div class="lin">${lbl(v.fecha)}</div>
-        <div class="lis">Ef ${fm(v.efectivo)} · Tf ${fm(v.transferencia)} · POS ${fm(v.pos)}</div></div>
-      <div style="display:flex;align-items:center;gap:6px">
-        <div class="lia">${fm(v.total)}</div>
-        <button class="btn bred bsm" onclick="delV('${v.id}')">✕</button>
-      </div>
+      <div class="lim"><div class="lin">${lbl(v.fecha)}</div><div class="lis">Ef ${fm(v.efectivo)} · Tf ${fm(v.transferencia)} · POS ${fm(v.pos)}</div></div>
+      <div style="display:flex;align-items:center;gap:6px"><div class="lia">${fm(v.total)}</div><button class="btn bred bsm" onclick="delV('${v.id}')">✕</button></div>
     </div>`).join('')||`<div class="empty"><div class="ico">💰</div>Sin ventas</div>`}
   </div>`;
 }
-
-function actualizarResumenVenta(fecha){
-  const vh=db.ventas.find(v=>v.fecha===fecha)||{efectivo:0,transferencia:0,pos:0,total:0};
-  const el=document.getElementById('resumen-venta-dia');
-  if(!el)return;
-  el.innerHTML=`
-    <div class="ct">📊 ${lbl(fecha)}</div>
-    <div class="sr"><span class="sl">Efectivo</span><span class="sv">${fm(vh.efectivo)}</span></div>
-    <div class="sr"><span class="sl">Transferencia</span><span class="sv">${fm(vh.transferencia)}</span></div>
-    <div class="sr"><span class="sl">POS</span><span class="sv">${fm(vh.pos)}</span></div>
-    <div class="sr"><span class="sl" style="font-weight:700">TOTAL</span>
-      <span class="sv pos" style="font-size:1.2rem">${fm(vh.total)}</span></div>`;
-}
-
-function calcTotalV(){
-  const e=+document.getElementById('v-ef').value||0,
-        t=+document.getElementById('v-tf').value||0,
-        p=+document.getElementById('v-ps').value||0;
-  document.getElementById('v-tot').textContent=fm(e+t+p);
-}
-
+function calcTotalV(){const e=+document.getElementById('v-ef').value||0,t=+document.getElementById('v-tf').value||0,p=+document.getElementById('v-ps').value||0;document.getElementById('v-tot').textContent=fm(e+t+p);}
 function onVenta(e){
   e.preventDefault();const f=e.target;
-  const fecha=f.fecha.value||hoy();
   const ef=+f.efectivo.value||0,tf=+f.transferencia.value||0,ps=+f.pos.value||0,tot=ef+tf+ps;
-  if(!tot){toast('⚠️ Ingresá al menos un monto');return;}
-  const ex=db.ventas.find(v=>v.fecha===fecha);
+  const ex=db.ventas.find(v=>v.fecha===hoy());
   if(ex){ex.efectivo+=ef;ex.transferencia+=tf;ex.pos+=ps;ex.total+=tot;}
-  else db.ventas.push({id:uid(),fecha,efectivo:ef,transferencia:tf,pos:ps,total:tot});
-  saveDB();f.efectivo.value='';f.transferencia.value='';f.pos.value='';
-  document.getElementById('v-tot').textContent='Gs. 0';
-  actualizarResumenVenta(fecha);
-  toast(`✅ Venta registrada para ${lbl(fecha)}`);
-  render();
+  else db.ventas.push({id:uid(),fecha:hoy(),efectivo:ef,transferencia:tf,pos:ps,total:tot});
+  saveDB();f.reset();toast('✅ Venta registrada');render();
 }
-
-function delV(id){
-  if(!confirm('¿Eliminar?'))return;
-  db.ventas=db.ventas.filter(v=>v.id!==id);
-  saveDB();render();toast('🗑️');
-}
+function delV(id){if(!confirm('¿Eliminar?'))return;db.ventas=db.ventas.filter(v=>v.id!==id);saveDB();render();toast('🗑️');}
 
 /* ═══════════════════════════════════════════════════════
    RESUMEN
@@ -1624,24 +1352,11 @@ function pgResumen(){
     if(!porDia[c.fecha])porDia[c.fecha]={tot:0,items:[]};
     porDia[c.fecha].tot+=c.precioTotal;porDia[c.fecha].items.push(c.nombre);
   });
-  const bHoy=calcBalance(iso=>iso===hoy());
   return`
-  <!-- Balance rápido hoy -->
-  <div class="card" style="border-color:${bHoy.res>=0?'var(--accent)':'var(--danger)'}">
-    <div class="ct">${bHoy.res>=0?'📈':'📉'} HOY — ${lbl(hoy())}</div>
-    <div class="sgrid" style="margin-bottom:0">
-      <div class="bstat"><div class="l">VENTAS</div><div class="v pos">${fm(bHoy.tv)}</div></div>
-      <div class="bstat"><div class="l">COMPRAS</div><div class="v neg">${fm(bHoy.deuda)}</div></div>
-      <div class="bstat"><div class="l">GASTOS</div><div class="v neg">${fm(bHoy.tg)}</div></div>
-      <div class="bstat"><div class="l">RESULTADO</div>
-        <div class="v ${bHoy.res>=0?'pos':'neg'}">${fm(bHoy.res)}</div></div>
-    </div>
-  </div>
-  <!-- Semana -->
   <div class="sgrid">
-    <div class="bstat"><div class="l">COMPRAS SEM.</div><div class="v neg">${fm(tc)}</div></div>
-    <div class="bstat"><div class="l">VENTAS SEM.</div><div class="v pos">${fm(tv)}</div></div>
-    <div class="bstat"><div class="l">GASTOS SEM.</div><div class="v neg">${fm(tg)}</div></div>
+    <div class="bstat"><div class="l">COMPRAS</div><div class="v neg">${fm(tc)}</div></div>
+    <div class="bstat"><div class="l">VENTAS</div><div class="v pos">${fm(tv)}</div></div>
+    <div class="bstat"><div class="l">GASTOS</div><div class="v neg">${fm(tg)}</div></div>
     <div class="bstat"><div class="l">RESULTADO</div><div class="v ${res>=0?'pos':'neg'}">${fm(res)}</div></div>
   </div>
   <div class="card" style="border-color:var(--warn)">
@@ -1752,20 +1467,6 @@ function pgMemoria(){
     <button class="btn bred bfull" style="margin-top:10px" onclick="limpiarMemoria()">
       🗑️ BORRAR TODA LA MEMORIA
     </button>
-  </div>
-
-  <div class="card" style="border-color:var(--accent)">
-    <div class="ct">💾 BACKUP DE DATOS</div>
-    <p style="font-family:var(--mono);font-size:.72rem;color:var(--txt3);margin-bottom:14px;line-height:1.7">
-      Exportá tus datos antes de actualizar la app o para pasarlos a otro dispositivo.
-      Los datos incluyen compras, gastos, ventas y memoria de precios.
-    </p>
-    <button class="btn bblue bfull" style="margin-bottom:8px" onclick="exportarDatos()">
-      📤 EXPORTAR TODOS LOS DATOS
-    </button>
-    <button class="btn bghost bfull" onclick="importarDatos()">
-      📥 IMPORTAR DATOS (restaurar backup)
-    </button>
   </div>`;
 }
 
@@ -1783,226 +1484,22 @@ function limpiarMemoria(){
   toast('🗑️ Memoria borrada');render();
 }
 
-function exportarDatos(){
-  const backup = JSON.stringify({
-    db, priceMemory,
-    exportado: new Date().toLocaleString('es-PY'),
-    version: 'verdapp-v5'
-  }, null, 2);
-  // Intentar copiar al portapapeles
-  if(navigator.clipboard){
-    navigator.clipboard.writeText(backup)
-      .then(()=>toast('✅ Datos copiados al portapapeles — pegá en WhatsApp o notas'))
-      .catch(()=>descargarBackup(backup));
-  } else {
-    descargarBackup(backup);
-  }
-}
-
-function descargarBackup(texto){
-  const blob = new Blob([texto], {type:'application/json'});
-  const url  = URL.createObjectURL(blob);
-  const a    = document.createElement('a');
-  a.href     = url;
-  a.download = 'verdapp-backup-'+hoy()+'.json';
-  a.click();
-  URL.revokeObjectURL(url);
-  toast('✅ Backup descargado');
-}
-
-function importarDatos(){
-  const txt = prompt('Pegá el backup aquí:');
-  if(!txt) return;
-  try{
-    const parsed = JSON.parse(txt);
-    if(parsed.db){
-      db = parsed.db;
-      saveDB();
-    }
-    if(parsed.priceMemory){
-      priceMemory = parsed.priceMemory;
-      localStorage.setItem(KEY_PRECIOS, JSON.stringify(priceMemory));
-    }
-    toast('✅ Datos restaurados correctamente');
-    render();
-  } catch(e){
-    toast('❌ Backup inválido — verificá el texto');
-  }
-}
-
-/* ═══════════════════════════════════════════════════════
-   HELPERS DE FECHA
-═══════════════════════════════════════════════════════ */
-function getMes(offset=0){
-  const d=new Date();
-  d.setMonth(d.getMonth()+offset);
-  return {
-    ini: toISO(new Date(d.getFullYear(),d.getMonth(),1)),
-    fin: toISO(new Date(d.getFullYear(),d.getMonth()+1,0)),
-    nombre: d.toLocaleString('es-PY',{month:'long',year:'numeric'})
-  };
-}
-function enMes(iso,offset=0){const m=getMes(offset);return iso>=m.ini&&iso<=m.fin;}
-
-function calcBalance(filtro){
-  const cs   = db.compras.filter(c=>filtro(c.fecha)&&!c.pendiente&&c.estado==='normal');
-  const desc = db.compras.filter(c=>filtro(c.fecha)&&!c.pendiente&&(c.estado==='dañado'||c.estado==='faltante'));
-  const gs   = db.gastos.filter(g=>filtro(g.fecha));
-  const vs   = db.ventas.filter(v=>filtro(v.fecha));
-  const tc   = cs.reduce((a,c)=>a+c.precioTotal,0);
-  const tdesc= desc.reduce((a,c)=>a+c.precioTotal,0);
-  const deuda= Math.max(0,tc-tdesc);
-  const tg   = gs.reduce((a,g)=>a+g.monto,0);
-  const tv   = vs.reduce((a,v)=>a+v.total,0);
-  const res  = tv - tg - deuda;
-  const margenPct = tv>0?Math.round((res/tv)*100):0;
-  return {tc,tdesc,deuda,tg,tv,res,margenPct};
-}
-
-function balanceCard(titulo, b, extra=''){
-  const resColor = b.res>=0?'pos':'neg';
-  const resIcon  = b.res>=0?'📈':'📉';
-  return`
-  <div class="card" style="border-color:${b.res>=0?'var(--accent)':'var(--danger)'}">
-    <div class="ct">${resIcon} ${titulo}</div>
-    <div class="sgrid" style="margin-bottom:12px">
-      <div class="bstat"><div class="l">VENTAS</div><div class="v pos">${fm(b.tv)}</div></div>
-      <div class="bstat"><div class="l">COMPRAS</div><div class="v neg">${fm(b.deuda)}</div></div>
-      <div class="bstat"><div class="l">GASTOS</div><div class="v neg">${fm(b.tg)}</div></div>
-      <div class="bstat"><div class="l">RESULTADO</div><div class="v ${resColor}">${fm(b.res)}</div></div>
-    </div>
-    <div style="background:var(--bg3);border-radius:10px;padding:12px">
-      <div class="sr"><span class="sl">Ventas totales</span><span class="sv pos">${fm(b.tv)}</span></div>
-      <div class="sr"><span class="sl">— Deuda proveedor</span><span class="sv neg">- ${fm(b.deuda)}</span></div>
-      <div class="sr"><span class="sl">— Gastos operativos</span><span class="sv neg">- ${fm(b.tg)}</span></div>
-      <div class="sr" style="border-top:2px solid var(--border);margin-top:4px;padding-top:10px">
-        <span class="sl" style="font-weight:700;font-size:.95rem">GANANCIA NETA</span>
-        <span class="sv ${resColor}" style="font-size:1.3rem;font-weight:800">${fm(b.res)}</span>
-      </div>
-      <div class="sr">
-        <span class="sl">Margen sobre ventas</span>
-        <span class="sv ${resColor}">${b.margenPct}%</span>
-      </div>
-      ${b.tdesc>0?`<div class="sr"><span class="sl" style="color:var(--accent)">Descuentos aplicados</span><span class="sv pos">+ ${fm(b.tdesc)}</span></div>`:''}
-    </div>
-    ${extra}
-  </div>`;
-}
-
-/* ── Balance por día ── */
-function balanceDia(fecha){
-  const b=calcBalance(iso=>iso===fecha);
-  if(!b.tv&&!b.tc&&!b.tg) return`<div style="padding:8px;font-family:var(--mono);font-size:.72rem;color:var(--txt3)">Sin datos para ${lbl(fecha)}</div>`;
-  return balanceCard(lbl(fecha),b);
-}
-
-/* ═══════════════════════════════════════════════════════
-   TAB BALANCE
-═══════════════════════════════════════════════════════ */
-function pgBalance(){
-  const s  = semana();
-  const bHoy = calcBalance(iso=>iso===hoy());
-  const bSem = calcBalance(enSem);
-  const bMes = calcBalance(iso=>enMes(iso,0));
-  const bMesAnt = calcBalance(iso=>enMes(iso,-1));
-
-  // Balance por día de la semana actual
-  const diasSem = [];
-  for(let i=0;i<7;i++){
-    const d=new Date(s.ini+'T12:00');
-    d.setDate(d.getDate()+i);
-    diasSem.push(toISO(d));
-  }
-
-  const filaDia = diasSem.map(f=>{
-    const b=calcBalance(iso=>iso===f);
-    const tieneData=b.tv>0||b.tc>0||b.tg>0;
-    if(!tieneData) return`<div class="sr" style="opacity:.35">
-      <span class="sl">${lbl(f)}</span>
-      <span class="sv" style="font-size:.75rem;color:var(--txt3)">sin datos</span>
-    </div>`;
-    const resColor=b.res>=0?'pos':'neg';
-    const icon=b.res>=0?'📈':'📉';
-    return`<div class="sr">
-      <div>
-        <div class="sl">${lbl(f)} ${icon}</div>
-        <div style="font-family:var(--mono);font-size:.67rem;color:var(--txt3)">
-          V: ${fm(b.tv)} · C: ${fm(b.deuda)} · G: ${fm(b.tg)}
-        </div>
-      </div>
-      <span class="sv ${resColor}">${fm(b.res)}</span>
-    </div>`;
-  }).join('');
-
-  return`
-  <!-- HOY -->
-  ${balanceCard('HOY — '+lbl(hoy()), bHoy)}
-
-  <!-- SEMANA -->
-  ${balanceCard('SEMANA · '+lbl(s.ini)+' → '+lbl(s.fin), bSem,
-    `<div style="margin-top:12px">
-      <div style="font-family:var(--mono);font-size:.7rem;color:var(--txt3);margin-bottom:8px;letter-spacing:1px">DETALLE POR DÍA</div>
-      ${filaDia}
-    </div>`
-  )}
-
-  <!-- MES ACTUAL -->
-  ${balanceCard('MES ACTUAL — '+getMes(0).nombre, bMes)}
-
-  <!-- MES ANTERIOR -->
-  ${balanceCard('MES ANTERIOR — '+getMes(-1).nombre, bMesAnt)}
-  `;
-}
-
 /* ═══════════════════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════════════════ */
 loadAll();
-updateHeader();
+updateHdr();
 render();
-setInterval(updateHeader,60000);
-// Verificar alertas de variación de precio al iniciar
-setTimeout(checkAlertasPrecios, 1000);
-// SW registrado abajo
+setInterval(updateHdr,60000);
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
 
 <script>
-// Service Worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js')
-      .then(reg => console.log('SW registrado', reg.scope))
-      .catch(err => console.error('SW error', err));
-  });
-}
-
-// Capturar evento de instalación PWA
-let deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  deferredPrompt = e;
-  // Mostrar botón instalar en el header
-  const btn = document.getElementById('install-btn');
-  if(btn) btn.style.display = 'flex';
-  console.log('PWA: listo para instalar');
-});
-
-window.addEventListener('appinstalled', () => {
-  deferredPrompt = null;
-  const btn = document.getElementById('install-btn');
-  if(btn) btn.style.display = 'none';
-  console.log('PWA instalada');
-});
-
-function instalarApp(){
-  if(!deferredPrompt){ 
-    alert('Para instalar:\n1. Tocá el menú ⋮ de Chrome\n2. Buscá "Instalar app" o "Agregar a pantalla de inicio"');
-    return;
-  }
-  deferredPrompt.prompt();
-  deferredPrompt.userChoice.then(r => {
-    console.log('Usuario eligió:', r.outcome);
-    deferredPrompt = null;
+      .then(reg => console.log('SW registrado', reg))
+      .catch(err => console.log('Error SW', err));
   });
 }
 </script>
