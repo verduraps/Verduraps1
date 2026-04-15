@@ -1,0 +1,2019 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>VerdApp</title>
+  <link rel="manifest" href="/manifest.json"/>
+  <meta name="theme-color" content="#0a1a0a"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:#111111; --bg2:#1a1a1a; --bg3:#222222; --card:#1c1c1c; --border:#2a2a2a;
+      --accent:#f59e0b; --accentd:#d97706; --warn:#fb923c; --danger:#f87171; --info:#60a5fa; --purple:#c084fc;
+      --txt:#f5f0e8; --txt2:#d4a853; --txt3:#6b5a3a;
+      --mono:'JetBrains Mono',monospace; --disp:'Syne',sans-serif; --r:14px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+    body{background:var(--bg);color:var(--txt);font-family:var(--disp);min-height:100dvh;overflow-x:hidden;}
+    #app{display:flex;flex-direction:column;height:100dvh;}
+
+    /* HEADER */
+    header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;}
+    .logo{font-size:1.35rem;font-weight:800;color:var(--accent);letter-spacing:-1px;}
+    .logo em{color:var(--txt3);font-style:normal;font-weight:400;}
+    .hdr-r{display:flex;align-items:center;gap:8px;}
+    .hdr-d{font-family:var(--mono);font-size:.68rem;color:var(--txt3);text-align:right;line-height:1.5;}
+    .iBtn{background:var(--bg3);border:1px solid var(--border);color:var(--txt2);width:38px;height:38px;border-radius:10px;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+    /* TABS */
+    nav{display:flex;overflow-x:auto;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;scrollbar-width:none;}
+    nav::-webkit-scrollbar{display:none;}
+    .tab{flex-shrink:0;padding:11px 14px;border:none;background:none;color:var(--txt3);font-family:var(--mono);font-size:.68rem;cursor:pointer;border-bottom:2px solid transparent;letter-spacing:.5px;transition:all .15s;}
+    .tab.on{color:var(--accent);border-bottom-color:var(--accent);}
+
+    /* CONTENT */
+    #pg{flex:1;overflow-y:auto;padding:16px;}
+
+    /* CARDS */
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px;}
+    .ct{font-family:var(--mono);font-size:.7rem;color:var(--accent);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;}
+
+    /* FORMS */
+    .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+    .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;}
+    .g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:10px;}
+    label{display:block;font-family:var(--mono);font-size:.67rem;color:var(--txt3);margin-bottom:4px;letter-spacing:.5px;}
+    input,select,textarea{width:100%;background:var(--bg2);border:1px solid var(--border);color:var(--txt);padding:10px 12px;border-radius:10px;font-family:var(--disp);font-size:.92rem;outline:none;transition:border-color .15s;}
+    input:focus,select:focus,textarea:focus{border-color:var(--accent);}
+    input[readonly]{background:var(--bg3);color:var(--txt2);}
+    select option{background:var(--bg2);}
+    textarea{resize:none;min-height:90px;font-family:var(--mono);font-size:.8rem;line-height:1.6;}
+
+    /* BUTTONS */
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 18px;border:none;border-radius:10px;font-family:var(--mono);font-size:.77rem;font-weight:700;cursor:pointer;letter-spacing:.5px;transition:transform .1s;}
+    .btn:active{transform:scale(.96);}
+    .bg{background:var(--accent);color:#111111;}
+    .bwarn{background:var(--warn);color:#0a1a0a;}
+    .bred{background:var(--danger);color:#fff;}
+    .bghost{background:var(--bg3);color:var(--txt2);border:1px solid var(--border);}
+    .bblue{background:var(--info);color:#0a1a0a;}
+    .bgreen{background:#16a34a;color:#fff;}
+    .bfull{width:100%;}
+    .bsm{padding:7px 11px;font-size:.68rem;}
+
+    /* BADGES */
+    .badge{display:inline-block;padding:2px 7px;border-radius:20px;font-family:var(--mono);font-size:.63rem;font-weight:700;}
+    .bok{background:#2a1f00;color:var(--accent);}
+    .bwn{background:#2a1200;color:var(--warn);}
+    .brd{background:#2e0d0d;color:var(--danger);}
+    .bpd{background:#1e1030;color:var(--purple);}
+
+    /* LIST */
+    .li{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
+    .lim{flex:1;min-width:0;}
+    .lin{font-size:.88rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .lis{font-family:var(--mono);font-size:.67rem;color:var(--txt3);margin-top:2px;}
+    .lia{font-family:var(--mono);font-size:.88rem;color:var(--accent);white-space:nowrap;}
+
+    /* STATS */
+    .sr{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
+    .sr:last-child{border-bottom:none;}
+    .sl{color:var(--txt3);font-size:.85rem;}
+    .sv{font-family:var(--mono);font-size:.93rem;}
+    .sv.pos{color:#4ade80;}
+    .sv.neg{color:var(--danger);}
+    .sv.warn{color:var(--warn);}
+
+    /* EMPTY */
+    .empty{text-align:center;padding:28px 16px;color:var(--txt3);font-family:var(--mono);font-size:.78rem;}
+    .empty .ico{font-size:2.2rem;opacity:.3;margin-bottom:8px;}
+
+    /* UPLOAD ZONE */
+    .uzone{border:2px dashed var(--border);border-radius:var(--r);padding:22px;text-align:center;cursor:pointer;transition:border-color .2s;margin-bottom:12px;}
+    .uzone:active{border-color:var(--accent);}
+    .uzone .ico{font-size:2.2rem;margin-bottom:8px;}
+    .uzone p{font-family:var(--mono);font-size:.75rem;color:var(--txt3);line-height:1.6;}
+
+    /* PREVIEW TABLE */
+    .ptable{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:.73rem;}
+    .ptable th{color:var(--txt3);text-align:left;padding:5px 7px;border-bottom:1px solid var(--border);}
+    .ptable td{padding:6px 7px;border-bottom:1px solid var(--border);}
+    .ptable tr:last-child td{border-bottom:none;}
+    .ptable input,.ptable select{padding:4px 6px;font-size:.72rem;border-radius:6px;}
+
+    /* PESOS TABLE */
+    .peso-table{width:100%;border-collapse:collapse;font-size:.82rem;}
+    .peso-table th{font-family:var(--mono);font-size:.65rem;color:var(--txt3);text-align:left;padding:8px 6px;border-bottom:2px solid var(--border);letter-spacing:.5px;}
+    .peso-table td{padding:6px 4px;border-bottom:1px solid var(--border);}
+    .peso-table tr:last-child td{border-bottom:none;}
+    .peso-table input{padding:6px 8px;font-size:.82rem;border-radius:8px;text-align:right;}
+    .peso-table .pname{font-weight:600;font-size:.85rem;padding-left:4px;}
+    .peso-table .calc{background:var(--bg3);color:#d4a853;font-family:var(--mono);font-size:.8rem;text-align:right;}
+
+    /* SPINNER */
+    .spin{display:inline-block;width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;}
+    @keyframes sp{to{transform:rotate(360deg);}}
+    .loading{display:flex;align-items:center;gap:10px;padding:12px;background:var(--bg3);border-radius:10px;font-family:var(--mono);font-size:.78rem;color:var(--txt2);margin-top:10px;}
+
+    /* TOAST */
+    #toasts{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:999;display:flex;flex-direction:column;gap:6px;pointer-events:none;}
+    .toast{background:var(--bg3);border:1px solid var(--border);color:var(--txt);padding:9px 16px;border-radius:20px;font-family:var(--mono);font-size:.77rem;animation:tin .2s ease;white-space:nowrap;}
+    @keyframes tin{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+
+    /* MODAL */
+    .ov{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:flex;align-items:center;justify-content:center;padding:16px;}
+    .modal{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;width:100%;max-width:460px;}
+    .mt{font-family:var(--mono);color:var(--accent);margin-bottom:14px;font-size:.8rem;letter-spacing:1px;}
+
+    /* RESUMEN GRID */
+    .sgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+    .bstat{text-align:center;padding:14px;background:var(--bg3);border-radius:12px;}
+    .bstat .l{font-family:var(--mono);font-size:.65rem;color:var(--txt3);letter-spacing:1px;margin-bottom:4px;}
+    .bstat .v{font-size:1.6rem;font-weight:800;}
+    .bstat .v.pos{color:#4ade80;}
+    .bstat .v.neg{color:var(--danger);}
+    .bstat .v.warn{color:var(--warn);}
+
+    /* WHATSAPP BTN */
+    .wa-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;background:#25d366;color:#fff;border-radius:10px;font-family:var(--mono);font-weight:700;font-size:.78rem;text-decoration:none;margin-bottom:8px;box-shadow:0 2px 8px rgba(37,211,102,.25);}
+
+    /* LIGHT MODE */
+    body.light{--bg:#faf7f2;--bg2:#f5f0e8;--bg3:#ede5d8;--card:#fff;--border:#e0d5c0;--accent:#d97706;--warn:#ea580c;--danger:#c0392b;--info:#1a6ea8;--purple:#7c3aed;--txt:#1a1208;--txt2:#6b4c1a;--txt3:#a08050;}
+    body.light input,body.light select,body.light textarea{background:#fff;}
+    body.light input[readonly]{background:#f5f0e8;}
+  </style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo">🥦 Verd<em>App</em></div>
+    <div class="hdr-r">
+      <div class="hdr-d" id="hdr-d">—</div>
+      <button id="install-btn" class="iBtn" onclick="instalarApp()"
+        style="display:none;background:var(--accent);color:#111;font-size:.7rem;font-weight:700;width:auto;padding:0 10px;font-family:var(--mono)"
+        title="Instalar app">📲 INSTALAR</button>
+      <button class="iBtn" onclick="toggleTheme()">☀️</button>
+    </div>
+  </header>
+  <nav>
+    <button class="tab on"  onclick="go('pesos')">⚖️ PESOS</button>
+    <button class="tab"     onclick="go('ia')">🤖 IA</button>
+    <button class="tab"     onclick="go('compras')">🛒 COMPRAS</button>
+    <button class="tab"     onclick="go('gastos')">💸 GASTOS</button>
+    <button class="tab"     onclick="go('ventas')">💰 VENTAS</button>
+    <button class="tab"     onclick="go('resumen')">📊 RESUMEN</button>
+    <button class="tab"     onclick="go('pendientes')">⏳ PEND.</button>
+    <button class="tab"     onclick="go('balance')">📈 BALANCE</button>
+    <button class="tab"     onclick="go('memoria')">🧠 MEMORIA</button>
+  </nav>
+  <div id="pg"></div>
+</div>
+
+<!-- MODAL EDITAR COMPRA -->
+<div id="m-edit" class="ov" style="display:none" onclick="closeEdit(event)">
+  <div class="modal">
+    <div class="mt">✏️ EDITAR REGISTRO</div>
+    <input type="hidden" id="e-id"/>
+    <div class="g2" style="margin-bottom:10px">
+      <div><label>PRODUCTO</label><input id="e-nom"/></div>
+      <div><label>TIPO</label><select id="e-tipo"><option>kilo</option><option>caja</option><option>unidad</option></select></div>
+    </div>
+    <div class="g2" style="margin-bottom:14px">
+      <div><label>CANTIDAD</label><input id="e-cant" type="number" step="0.1"/></div>
+      <div><label>PRECIO UNITARIO (Gs.)</label><input id="e-precio" type="number"/></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn bg bfull" onclick="saveEdit()">GUARDAR</button>
+      <button class="btn bghost" onclick="closeEdit()">✕</button>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   PRODUCTOS DEFAULT (de tu products.json)
+═══════════════════════════════════════════════════════ */
+const PRODUCTOS_DEFAULT = [
+  "Aguacate","Ajo","Banana","Batata Nacional","Berenjena","Cebolla","Cebolla Morada",
+  "Choclo","Ciruela","Curcuma","Durazno","Frutilla","Gengibre","Harina de Maiz",
+  "Kiwi","Lechuga Hidroponica","Lechuga Repollada","Limon","Locote Amarillo",
+  "Locote Rojo","Locote Verde","Mamon Brasil","Mamón Nac","Mandarina",
+  "Manzana Roja Grande","Manzana Verde","Mburukuja","Melon Brasil","Melon Japones",
+  "Melon Nacional","Naranja","Papa","Papa Brasil","Pelon","Pepino","Pera",
+  "Piña Grande","Pomelo","Poroto Rojo","Queso","Remolacha","Repollo",
+  "Repollo Morado","Sandia","Tomate","Tomate Liza","Tomate Picado","Uva",
+  "Verdeo","Zanahoria","Zapallito","Zapallo Brasil","Zuchini"
+];
+
+// Números de WhatsApp
+const WA_NUMS = ['595991378503','595991656990','595983493424'];
+const WA_NOMBRES = ['0991378503','0991656990','0983493424'];
+
+/* ═══════════════════════════════════════════════════════
+   BASE DE DATOS LOCAL
+═══════════════════════════════════════════════════════ */
+const KEY_GESTION = 'verdapp_v4';
+const KEY_PESOS   = 'verdapp_pesos_v2';
+const KEY_PRECIOS = 'verdapp_precios_v1'; // memoria de precios aprendidos
+
+let db = {compras:[],gastos:[],ventas:[]};
+let pesoRows = []; // [{producto, pesoTotal, pesoCaja, pesoNeto, precioCompra, precioVenta}]
+let margen = 1.3;
+// Memoria de precios: {nombreNorm: {precios:[...ultimos 10], min, max, avg, total_registros}}
+let priceMemory = {};
+
+function loadAll() {
+  try { const r=localStorage.getItem(KEY_GESTION); if(r) db=JSON.parse(r); } catch(e){}
+  try {
+    const r=localStorage.getItem(KEY_PESOS);
+    if(r) {
+      const p=JSON.parse(r);
+      pesoRows=p.rows||[];
+      margen=p.margen||1.3;
+    }
+  } catch(e){}
+  try { const r=localStorage.getItem(KEY_PRECIOS); if(r) priceMemory=JSON.parse(r); } catch(e){}
+  if(!pesoRows.length) initPesoRows();
+}
+
+/* ── Guardar precio y TIPO aprendido ── */
+function aprenderPrecio(nombre, precioUnit, tipo) {
+  if(!nombre || !precioUnit || precioUnit <= 0) return;
+  const key = normalizarTexto(nombre).slice(0,20);
+  if(!priceMemory[key]) priceMemory[key] = {precios:[], total:0};
+  const mem = priceMemory[key];
+  // Guardar últimos 10 precios
+  mem.precios.push({precio: precioUnit, fecha: hoy()});
+  if(mem.precios.length > 10) mem.precios.shift();
+  // Recalcular min, max, avg
+  const vals = mem.precios.map(p=>p.precio);
+  mem.min = Math.min(...vals);
+  mem.max = Math.max(...vals);
+  mem.avg = Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+  mem.total = (mem.total||0) + 1;
+  // Aprender el tipo (caja/kilo/unidad) — guardar el más frecuente
+  if(tipo && tipo !== 'unidad') {
+    if(!mem.tipos) mem.tipos = {};
+    mem.tipos[tipo] = (mem.tipos[tipo]||0) + 1;
+    // El tipo aprendido es el más frecuente
+    mem.tipoDefault = Object.entries(mem.tipos).sort((a,b)=>b[1]-a[1])[0][0];
+  }
+  localStorage.setItem(KEY_PRECIOS, JSON.stringify(priceMemory));
+}
+
+/* ── Obtener tipo aprendido para un producto ── */
+function getTipoAprendido(nombre) {
+  const key = normalizarTexto(nombre).slice(0,20);
+  const mem = priceMemory[key];
+  return mem && mem.tipoDefault ? mem.tipoDefault : null;
+}
+
+/* ── Detectar variación de precio ≥ 20% ── */
+function detectarVariacion(nombre, precioNuevo){
+  if(!precioNuevo || precioNuevo <= 0) return null;
+  const key = normalizarTexto(nombre).slice(0,20);
+  const mem = priceMemory[key];
+  if(!mem || mem.precios.length < 1) return null;
+  const precioAnterior = mem.precios[mem.precios.length-1].precio;
+  if(!precioAnterior) return null;
+  const variacion = ((precioNuevo - precioAnterior) / precioAnterior) * 100;
+  if(Math.abs(variacion) < 20) return null;
+  return {
+    anterior: precioAnterior,
+    nuevo: precioNuevo,
+    pct: Math.round(variacion),
+    sube: variacion > 0
+  };
+}
+
+/* ── Generar resumen de alertas al abrir la app ── */
+function checkAlertasPrecios(){
+  // Solo mostrar una vez por sesión
+  if(window._alertasChecked) return;
+  window._alertasChecked = true;
+  const alertas = [];
+  // Revisar últimas compras (últimas 48hs)
+  const ayer = new Date(); ayer.setDate(ayer.getDate()-1);
+  const ayerISO = toISO(ayer);
+  db.compras.filter(c=>c.fecha>=ayerISO&&!c.pendiente&&c.precioUnit>0).forEach(c=>{
+    const v = detectarVariacion(c.nombre, c.precioUnit);
+    if(v) alertas.push({nombre:c.nombre, ...v});
+  });
+  if(!alertas.length) return;
+  // Mostrar banner de alertas
+  const html = alertas.map(a=>
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+      <span style="font-size:.82rem">${a.nombre}</span>
+      <span style="font-family:var(--mono);font-size:.78rem;color:${a.sube?'var(--danger)':'var(--accent)'}">
+        ${a.sube?'▲':'▼'} ${Math.abs(a.pct)}% · ${fm(a.anterior)} → ${fm(a.nuevo)}
+      </span>
+    </div>`
+  ).join('');
+  // Insertar banner al principio del contenido
+  setTimeout(()=>{
+    const pg = document.getElementById('pg');
+    if(!pg) return;
+    const banner = document.createElement('div');
+    banner.style.cssText='background:#2e1500;border:1px solid var(--warn);border-radius:14px;padding:14px;margin-bottom:14px';
+    banner.innerHTML=`
+      <div style="font-family:var(--mono);font-size:.72rem;color:var(--warn);font-weight:700;margin-bottom:8px;letter-spacing:1px">
+        ⚠️ VARIACIONES DE PRECIO ≥20% (últimas 48hs)
+      </div>
+      ${html}
+      <button onclick="this.parentElement.remove()" style="margin-top:10px;background:var(--bg3);border:1px solid var(--border);color:var(--txt3);padding:6px 12px;border-radius:8px;font-family:var(--mono);font-size:.7rem;cursor:pointer;width:100%">
+        ENTENDIDO ✓
+      </button>`;
+    pg.insertBefore(banner, pg.firstChild);
+  }, 500);
+}
+
+/* ── Obtener hint aprendido (tiene prioridad sobre rangos fijos) ── */
+function getPriceHintAprendido(nombre) {
+  const key = normalizarTexto(nombre).slice(0,20);
+  const mem = priceMemory[key];
+  if(!mem || mem.precios.length < 2) return null; // necesita al menos 2 registros
+  // Ampliar un poco el rango para tolerar variaciones normales (±20%)
+  return {
+    min: Math.round(mem.min * 0.80),
+    max: Math.round(mem.max * 1.20),
+    avg: mem.avg,
+    aprendido: true,
+    registros: mem.total
+  };
+}
+
+function initPesoRows() {
+  pesoRows = PRODUCTOS_DEFAULT.map(n=>({
+    producto:n, pesoTotal:'', pesoCaja:'0', pesoNeto:'', precioCompra:'', precioVenta:''
+  }));
+}
+
+function saveDB()   { localStorage.setItem(KEY_GESTION, JSON.stringify(db)); }
+function savePesos(){
+  // Recalcular todo antes de guardar
+  pesoRows = pesoRows.map(r=>({...r,
+    pesoNeto: calcPesoNeto(r.pesoTotal, r.pesoCaja),
+    precioVenta: calcVenta(r.pesoTotal, r.pesoCaja, r.precioCompra)
+  }));
+  localStorage.setItem(KEY_PESOS, JSON.stringify({rows:pesoRows, margen, lastMod: new Date().toLocaleString('es-PY')}));
+}
+
+function uid() { return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
+
+/* ═══════════════════════════════════════════════════════
+   CÁLCULOS DE PESO Y PRECIO
+═══════════════════════════════════════════════════════ */
+function toN(v) {
+  if(v===''||v===null||v===undefined) return null;
+  const p=Number(String(v).replace(',','.'));
+  return Number.isFinite(p)?p:null;
+}
+
+function calcPesoNeto(total, caja) {
+  const t=toN(total), c=toN(caja)||0;
+  if(!t||t<=0) return '';
+  const n=t-c;
+  return n>0?Number(n.toFixed(3)):'';
+}
+
+function calcVenta(total, caja, compra) {
+  const neto=calcPesoNeto(total,caja);
+  const p=toN(compra);
+  if(!neto||!p||p<=0) return '';
+  return Math.ceil((p/neto)*margen/100)*100;
+}
+
+function recalcPesos() {
+  pesoRows=pesoRows.map(r=>({...r,
+    pesoNeto:calcPesoNeto(r.pesoTotal,r.pesoCaja),
+    precioVenta:calcVenta(r.pesoTotal,r.pesoCaja,r.precioCompra)
+  }));
+}
+
+/* ═══════════════════════════════════════════════════════
+   FECHA
+═══════════════════════════════════════════════════════ */
+const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const MESES=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const DS=['dom','lun','mar','mie','jue','vie','sab'];
+const hoy=()=>toISO(new Date());
+const toISO=d=>d.toISOString().slice(0,10);
+const lbl=iso=>{const d=new Date(iso+'T12:00');return `${DIAS[d.getDay()]} ${d.getDate()} ${MESES[d.getMonth()]}`;};
+const fm=n=>'Gs. '+Number(n||0).toLocaleString('es-PY');
+const expandirPrecio=n=>{if(!n||n===0)return 0;return n<10000?n*1000:n;};
+const normalizarTexto=s=>(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+const PRICE_HINTS = [
+  {keys:['zanahoria'], min:90000, max:130000},
+  {keys:['papa brasil'], min:90000, max:150000},
+  {keys:['papa'], min:70000, max:110000},
+  {keys:['cebolla morada'], min:80000, max:130000},
+  {keys:['cebolla'], min:60000, max:90000},
+  {keys:['tomate liza','tomate picado','tomate'], min:120000, max:180000},
+  {keys:['banana de oro'], min:160000, max:220000},
+  {keys:['banana'], min:100000, max:150000},
+  {keys:['locote verde','locote rojo','locote amarillo','locote'], min:100000, max:180000},
+  {keys:['zapallo brasil'], min:50000, max:70000},
+  {keys:['zapallo'], min:180000, max:280000},
+  {keys:['repollo morado'], min:120000, max:220000},
+  {keys:['repollo'], min:100000, max:180000},
+  {keys:['mandarina argentina'], min:160000, max:250000},
+  {keys:['mandarina bahia'], min:160000, max:250000},
+  {keys:['mandarina'], min:160000, max:240000},
+  {keys:['naranja'], min:160000, max:230000},
+  {keys:['manzana roja grande','manzana roja'], min:280000, max:360000},
+  {keys:['manzana verde'], min:220000, max:320000},
+  {keys:['pera'], min:160000, max:220000},
+  {keys:['uva'], min:180000, max:260000},
+  {keys:['ciruela'], min:180000, max:260000},
+  {keys:['pina grande','pina'], min:80000, max:180000},
+  {keys:['kiwi'], min:250000, max:350000},
+  {keys:['melon nacional'], min:45000, max:65000},
+  {keys:['melon japones'], min:150000, max:250000},
+  {keys:['melon brasil'], min:120000, max:200000},
+  {keys:['mburukuja'], min:120000, max:180000},
+  {keys:['mamon brasil grande'], min:160000, max:220000},
+  {keys:['mamon brasil chico'], min:100000, max:150000},
+  {keys:['mamon brasil'], min:100000, max:220000},
+  {keys:['mamon nac','mamon nacional'], min:60000, max:90000},
+  {keys:['mandioca','mandio'], min:80000, max:100000},
+  {keys:['limon'], min:60000, max:100000},
+  {keys:['remolacha'], min:100000, max:160000},
+  {keys:['berenjena'], min:70000, max:110000},
+  {keys:['zuchini','zukini','zucchini'], min:70000, max:110000},
+  {keys:['zapallito'], min:70000, max:110000},
+  {keys:['lechuga repollada','lechuga hidroponica'], min:80000, max:140000},
+  {keys:['choclo'], min:10000, max:20000},
+  {keys:['poroto rojo','poroto'], min:10000, max:25000},
+  {keys:['ajo'], min:150000, max:220000},
+  {keys:['acelga'], min:25000, max:45000},
+  {keys:['kuratu','perejil'], min:7000, max:25000},
+  {keys:['cebollita','verdeo'], min:15000, max:35000},
+  {keys:['apio','espinaca'], min:15000, max:50000}
+];
+function getPriceHint(nombre=''){
+  // Primero: precios aprendidos (tienen prioridad — son datos reales de tu negocio)
+  const aprendido = getPriceHintAprendido(nombre);
+  if(aprendido) return aprendido;
+  // Segundo: rangos fijos del código
+  const n=normalizarTexto(nombre);
+  for(const hint of PRICE_HINTS){
+    if(hint.keys.some(k=>n.includes(k))) return hint;
+  }
+  return null;
+}
+function interpretarPrecioCantidad(nombre,cantidad,valorLeido){
+  const qty=Math.max(1,Number(cantidad)||1);
+  const raw=expandirPrecio(Number(valorLeido)||0);
+  const hint=getPriceHint(nombre);
+  const nombreNorm=normalizarTexto(nombre);
+  const isVerdeo=/(acelga|apio|perejil|kuratu|espinaca|cebollita|verdeo|oregano|albahaca)/.test(nombreNorm);
+  if(!raw) return {precioUnit:0,precioTotal:0,tipo_precio:'unitario',confianza:'baja'};
+  if(qty===1) return {precioUnit:raw,precioTotal:raw,tipo_precio:'unitario',confianza:hint?'alta':'media'};
+  const unitAsUnit=raw;
+  const unitAsTotal=Math.round(raw/qty);
+
+  // Verdeos por docena/lote: cuando vienen 12, 24, 36 o cantidades altas, casi siempre
+  // el valor leído corresponde al TOTAL del lote y no al precio unitario.
+  if(isVerdeo && qty>=12){
+    let conf='alta';
+    if(hint){
+      const dentroLote = raw>=hint.min && raw<=hint.max*2.2;
+      const dentroUnit = unitAsUnit>=hint.min && unitAsUnit<=hint.max;
+      if(!dentroLote && dentroUnit) conf='media';
+    }
+    return {
+      precioUnit:unitAsTotal,
+      precioTotal:raw,
+      tipo_precio:'total',
+      confianza:conf
+    };
+  }
+
+  if(!hint){
+    return {precioUnit:unitAsUnit,precioTotal:unitAsUnit*qty,tipo_precio:'unitario',confianza:'media'};
+  }
+  const avg=(hint.min+hint.max)/2;
+  const score=(unit,mode)=>{
+    let s=0;
+    if(unit>=hint.min && unit<=hint.max){
+      s += 100;
+      s -= Math.abs(unit-avg)/avg*20;
+    } else {
+      const dist = unit<hint.min ? (hint.min-unit)/hint.min : (unit-hint.max)/hint.max;
+      s -= dist*120;
+    }
+    if(mode==='total'){
+      if(raw>hint.max*1.25) s += 30;
+      if(unit>=hint.min && unit<=hint.max) s += 10;
+    } else {
+      if(raw>=hint.min && raw<=hint.max) s += 10;
+      if(raw>hint.max*1.7) s -= 50;
+    }
+    if(qty%12===0 && mode==='total') s += 12;
+    return s;
+  };
+  const scoreUnit=score(unitAsUnit,'unitario');
+  const scoreTotal=score(unitAsTotal,'total');
+  if(scoreTotal>scoreUnit){
+    return {
+      precioUnit:unitAsTotal,
+      precioTotal:raw,
+      tipo_precio:'total',
+      confianza:Math.abs(scoreTotal-scoreUnit)>=25?'alta':'media'
+    };
+  }
+  return {
+    precioUnit:unitAsUnit,
+    precioTotal:unitAsUnit*qty,
+    tipo_precio:'unitario',
+    confianza:Math.abs(scoreTotal-scoreUnit)>=25?'alta':'media'
+  };
+}
+
+function semana(){
+  const d=new Date(),dia=d.getDay();
+  const lun=new Date(d);lun.setDate(d.getDate()-((dia===0?7:dia)-1));
+  const dom=new Date(lun);dom.setDate(lun.getDate()+6);
+  return{ini:toISO(lun),fin:toISO(dom)};
+}
+const enSem=iso=>{const s=semana();return iso>=s.ini&&iso<=s.fin;};
+function diaF(p){
+  const idx=DS.findIndex(d=>p.toLowerCase().startsWith(d));
+  if(idx===-1)return null;
+  const h=new Date(),diff=idx-h.getDay();
+  const t=new Date(h);t.setDate(h.getDate()+(diff>0?diff-7:diff));
+  return toISO(t);
+}
+
+function updateHdr(){
+  const d=new Date();
+  document.getElementById('hdr-d').innerHTML=`${lbl(hoy())}<br><span style="color:var(--txt3)">${DIAS[d.getDay()]}</span>`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   TABS
+═══════════════════════════════════════════════════════ */
+let tab='pesos';
+function go(t){
+  tab=t;
+  const ns=['pesos','ia','compras','gastos','ventas','resumen','pendientes','balance','memoria'];
+  document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('on',ns[i]===t));
+  render();
+}
+
+function render(){
+  const p=document.getElementById('pg');
+  if(tab==='pesos')       p.innerHTML=pgPesos();
+  else if(tab==='ia')     p.innerHTML=pgIA();
+  else if(tab==='compras')p.innerHTML=pgCompras();
+  else if(tab==='gastos') p.innerHTML=pgGastos();
+  else if(tab==='ventas') p.innerHTML=pgVentas();
+  else if(tab==='resumen')p.innerHTML=pgResumen();
+  else if(tab==='pendientes')p.innerHTML=pgPendientes();
+  else if(tab==='balance')p.innerHTML=pgBalance();
+  else if(tab==='memoria')p.innerHTML=pgMemoria();
+  bindForms();
+}
+
+function bindForms(){
+  const fc=document.getElementById('form-compra');if(fc)fc.addEventListener('submit',onCompra);
+  const fg=document.getElementById('form-gasto'); if(fg)fg.addEventListener('submit',onGasto);
+  const fv=document.getElementById('form-venta'); if(fv)fv.addEventListener('submit',onVenta);
+  ['v-ef','v-tf','v-ps'].forEach(id=>{const el=document.getElementById(id);if(el)el.addEventListener('input',calcTotalV);});
+}
+
+function toast(msg,dur=2500){
+  const el=document.createElement('div');el.className='toast';el.textContent=msg;
+  document.getElementById('toasts').appendChild(el);setTimeout(()=>el.remove(),dur);
+}
+function toggleTheme(){
+  document.body.classList.toggle('light');
+  document.querySelector('.iBtn[onclick="toggleTheme()"]').textContent=document.body.classList.contains('light')?'🌙':'☀️';
+}
+
+/* ═══════════════════════════════════════════════════════
+   TAB PESOS — integración completa de tu app
+═══════════════════════════════════════════════════════ */
+function pgPesos(){
+  recalcPesos();
+  const activos=pesoRows.filter(r=>r.pesoTotal||r.precioCompra);
+  const msgPrecios=buildMsgPrecios();
+  const msgPesos=buildMsgPesos();
+
+  const filas=pesoRows.map((r,i)=>{
+    const tieneData=r.pesoTotal||r.precioCompra;
+    return`<tr style="${tieneData?'':'opacity:.4'}">
+      <td class="pname">${r.producto}</td>
+      <td><input type="number" step="0.01" value="${r.pesoTotal}" placeholder="0"
+        onchange="pesoRows[${i}].pesoTotal=this.value;actualizarFila(${i})" style="width:72px"/></td>
+      <td><input type="number" step="0.01" value="${r.pesoCaja||0}" placeholder="0"
+        onchange="pesoRows[${i}].pesoCaja=this.value;actualizarFila(${i})" style="width:60px"/></td>
+      <td class="calc">${r.pesoNeto||'—'}</td>
+      <td><input type="number" step="1000" value="${r.precioCompra}" placeholder="0"
+        onchange="pesoRows[${i}].precioCompra=this.value;actualizarFila(${i})" style="width:80px"/></td>
+      <td class="calc" style="color:var(--accent);font-weight:700">${r.precioVenta?r.precioVenta+' Gs/kg':'—'}</td>
+    </tr>`;
+  }).join('');
+
+  return`
+  <div class="card" style="border-color:var(--accent)">
+    <div class="ct">💾 BACKUP DE DATOS</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn bblue bfull" onclick="exportarDatos()">📤 EXPORTAR</button>
+      <button class="btn bghost bfull" onclick="importarDatos()">📥 IMPORTAR</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ct">⚖️ PESOS Y PRECIOS DEL DÍA</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <div style="font-family:var(--mono);font-size:.72rem;color:var(--txt3);flex:1">
+        <b style="color:var(--txt2)">Fórmula:</b> (Precio ÷ Peso neto) × ${margen} → redondeado al 100 más cercano
+      </div>
+      <input type="number" step="0.1" value="${margen}" style="width:70px;padding:6px 8px;font-size:.85rem"
+        onchange="margen=+this.value;recalcPesos();savePesos();render()" title="Margen"/>
+    </div>
+
+    <!-- Pegar precios en bloque -->
+    <div style="margin-bottom:12px">
+      <label>PEGAR PRECIOS EN BLOQUE (Producto Precio, una línea por producto)</label>
+      <textarea id="bloque-precios" placeholder="Papa 85&#10;Tomate 150&#10;Mandarina 380" style="min-height:70px"></textarea>
+      <button class="btn bg bfull" style="margin-top:6px" onclick="aplicarPreciosBloque()">APLICAR PRECIOS</button>
+      <div id="bloque-resultado"></div>
+    </div>
+
+    <div style="overflow-x:auto">
+      <table class="peso-table">
+        <thead><tr>
+          <th>PRODUCTO</th><th>PESO TOTAL</th><th>PESO CAJA</th>
+          <th>PESO NETO</th><th>COMPRA Gs.</th><th>VENTA Gs/kg</th>
+        </tr></thead>
+        <tbody>${filas}</tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn bghost bsm" onclick="resetPesos()">🔄 RESETEAR PESOS</button>
+      <button class="btn bghost bsm" onclick="agregarFilaPeso()">+ FILA</button>
+    </div>
+  </div>
+
+  <!-- Vista previa y WhatsApp -->
+  <div class="card">
+    <div class="ct">📲 ENVIAR POR WHATSAPP</div>
+    <div style="margin-bottom:12px">
+      <label>LISTA DE PRECIOS</label>
+      <textarea readonly style="min-height:100px;font-size:.75rem">${msgPrecios}</textarea>
+    </div>
+    <div style="margin-bottom:14px">
+      ${WA_NUMS.map((n,i)=>`<a class="wa-btn" href="https://wa.me/${n}?text=${encodeURIComponent(msgPrecios)}" target="_blank">📱 Precios al ${WA_NOMBRES[i]}</a>`).join('')}
+    </div>
+    <div style="margin-bottom:12px">
+      <label>LISTA DE PESOS</label>
+      <textarea readonly style="min-height:100px;font-size:.75rem">${msgPesos}</textarea>
+    </div>
+    <div>
+      ${WA_NUMS.map((n,i)=>`<a class="wa-btn" href="https://wa.me/${n}?text=${encodeURIComponent(msgPesos)}" target="_blank" style="background:#128c7e">📱 Pesos al ${WA_NOMBRES[i]}</a>`).join('')}
+    </div>
+  </div>`;
+}
+
+function actualizarFila(i){
+  pesoRows[i].pesoNeto=calcPesoNeto(pesoRows[i].pesoTotal,pesoRows[i].pesoCaja);
+  pesoRows[i].precioVenta=calcVenta(pesoRows[i].pesoTotal,pesoRows[i].pesoCaja,pesoRows[i].precioCompra);
+  savePesos();
+  // Actualizar solo las celdas calculadas sin re-renderizar toda la tabla
+  const rows=document.querySelectorAll('.peso-table tbody tr');
+  if(rows[i]){
+    const cells=rows[i].querySelectorAll('.calc');
+    if(cells[0]) cells[0].textContent=pesoRows[i].pesoNeto||'—';
+    if(cells[1]) cells[1].textContent=pesoRows[i].precioVenta?pesoRows[i].precioVenta+' Gs/kg':'—';
+  }
+  // Actualizar previews WhatsApp
+  const precios=document.querySelectorAll('textarea[readonly]');
+  if(precios[0]) precios[0].value=buildMsgPrecios();
+  if(precios[1]) precios[1].value=buildMsgPesos();
+}
+
+function aplicarPreciosBloque(){
+  const txt=document.getElementById('bloque-precios').value.trim();
+  if(!txt){toast('⚠️ Pegá los precios primero');return;}
+  let aplicados=0;
+  const noEncontrados=[];
+  const interpretados=[];
+  txt.split('\n').forEach(l=>{
+    const t=l.trim();if(!t)return;
+    const limpio=normalizarTexto(t);
+    const nums=(limpio.match(/\d+(\.\d+)?/g)||[]).map(Number);
+    if(!nums.length)return;
+    const qty=nums.length>=2?(nums[0]||1):1;
+    const valor=nums[nums.length-1];
+    const nombreParte=limpio
+      .replace(/[\d.,]+/g,' ')
+      .replace(/\b(kilo|kilos|kg|caja|cajas|unidad|unidades|und|docena|docenas|uno|una|lindo|color|bahia)\b/g,' ')
+      .replace(/\s+/g,' ')
+      .trim();
+    if(!nombreParte)return;
+    const idx=pesoRows.findIndex(r=>{
+      const prod=normalizarTexto(r.producto);
+      return prod.includes(nombreParte)||nombreParte.includes(prod);
+    });
+    if(idx>=0){
+      const info=interpretarPrecioCantidad(pesoRows[idx].producto, qty, valor);
+      pesoRows[idx].precioCompra=info.precioUnit;
+      pesoRows[idx].precioVenta=calcVenta(pesoRows[idx].pesoTotal,pesoRows[idx].pesoCaja,info.precioUnit);
+      interpretados.push(`${pesoRows[idx].producto}: ${info.tipo_precio==='total' ? 'total '+expandirPrecio(valor).toLocaleString('es-PY')+' → unit '+info.precioUnit.toLocaleString('es-PY') : 'unit '+info.precioUnit.toLocaleString('es-PY')}`);
+      aplicados++;
+    } else {
+      noEncontrados.push(nombreParte);
+    }
+  });
+  savePesos();
+  let msg=`✅ ${aplicados} precios aplicados`;
+  setTimeout(()=>{
+    const el=document.getElementById('bloque-resultado');
+    if(el){
+      el.innerHTML=`<div style="margin-top:10px;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:10px;font-family:var(--mono);font-size:.75rem">
+        <div style="color:var(--accent);margin-bottom:6px">✅ ${aplicados} aplicados correctamente</div>
+        ${interpretados.length?`<div style="color:var(--txt2);margin-bottom:6px">${interpretados.slice(0,6).join('<br>')}</div>`:''}
+        ${noEncontrados.length?`<div style="color:var(--warn)">⚠️ No encontrados (${noEncontrados.length}):<br><span style="color:var(--txt3)">${noEncontrados.join(', ')}</span></div>`:''}
+      </div>`;
+    }
+  },100);
+  if(noEncontrados.length) msg+=`\n⚠️ No encontrados: ${noEncontrados.join(', ')}`;
+  toast(msg,3500);render();
+}
+
+function buildMsgPrecios(){
+  const lines=['LISTA DE PRECIOS',''];
+  pesoRows
+    .filter(r=>r.producto&&r.precioVenta)
+    .sort((a,b)=>a.producto.localeCompare(b.producto,'es'))
+    .forEach(r=>lines.push(`${r.producto}: ${r.precioVenta} Gs/kg`));
+  lines.push('','Última modificación: '+new Date().toLocaleString('es-PY'));
+  return lines.join('\n');
+}
+
+function buildMsgPesos(){
+  const lines=['LISTA DE PESOS',''];
+  pesoRows
+    .filter(r=>r.producto&&r.pesoTotal)
+    .sort((a,b)=>a.producto.localeCompare(b.producto,'es'))
+    .forEach(r=>lines.push(`${r.producto}: ${r.pesoTotal} kg`));
+  lines.push('','Última modificación: '+new Date().toLocaleString('es-PY'));
+  return lines.join('\n');
+}
+
+function resetPesos(){
+  if(!confirm('¿Resetear TODOS los datos del día? (pesos, cajas y precios)'))return;
+  pesoRows=pesoRows.map(r=>({...r,pesoTotal:'',pesoCaja:'0',pesoNeto:'',precioCompra:'',precioVenta:''}));
+  savePesos();toast('🔄 Todo reseteado');render();
+}
+
+function agregarFilaPeso(){
+  const nombre=prompt('Nombre del producto:');
+  if(!nombre)return;
+  pesoRows.push({producto:nombre,pesoTotal:'',pesoCaja:'0',pesoNeto:'',precioCompra:'',precioVenta:''});
+  savePesos();render();
+}
+
+/* ═══════════════════════════════════════════════════════
+   TAB IA – TEXTO MASIVO
+═══════════════════════════════════════════════════════ */
+let prevFoto=[],prevTexto=[];
+let fB64='',fMime='';
+
+function pgIA(){
+  return`
+  <div class="card">
+    <div class="ct">📸 FOTO DE REMITO / FACTURA</div>
+    <p style="font-family:var(--mono);font-size:.72rem;color:var(--txt3);margin-bottom:12px;line-height:1.7">
+      Sacá foto a la remito → la IA lee todos los productos automáticamente
+    </p>
+    <label class="uzone" for="inp-foto">
+      <div class="ico">📄</div>
+      <p>TOCÁ PARA TOMAR FOTO<br>o elegir imagen de galería</p>
+    </label>
+    <input type="file" id="inp-foto" accept="image/*" style="display:none" onchange="onFoto(this)"/>
+    <img id="foto-prev" style="display:none;width:100%;border-radius:10px;max-height:200px;object-fit:cover;margin-bottom:12px"/>
+    <div id="ia-st"></div>
+    <div id="ia-res"></div>
+  </div>
+
+  <div class="card">
+    <div class="ct">📋 LISTA COMPLETA (texto / WhatsApp)</div>
+    <p style="font-family:var(--mono);font-size:.72rem;color:var(--txt3);margin-bottom:10px;line-height:1.7">
+      Pegá la lista tal como viene. Cada línea = un producto.
+    </p>
+    <div style="margin-bottom:10px">
+      <label>FECHA DE ESTA CARGA</label>
+      <input type="date" id="txt-fecha" value="${hoy()}"/>
+    </div>
+    <textarea id="txt-m" placeholder="Papa 12 70
+Zapallo Brasil 3 55
+Kiwi uno 300
+Cebollita 24 35
+Mandarina sin precio
+Pepino dañado"></textarea>
+    <button class="btn bblue bfull" style="margin-top:10px" onclick="procesarTexto()">
+      ⚡ PROCESAR LISTA COMPLETA
+    </button>
+    <div id="txt-res"></div>
+  </div>
+
+  <div class="card">
+    <div class="ct">⚡ COMANDO RÁPIDO</div>
+    <input id="cmd" type="text" placeholder="tomate 25 cajas 150000" autocomplete="off" style="margin-bottom:10px"/>
+    <div style="display:flex;gap:8px">
+      <button class="btn bg bfull" onclick="onCmd()">PROCESAR</button>
+      <button class="btn bghost bsm" onclick="document.getElementById('cmd').value=''">✕</button>
+    </div>
+    <div id="cmd-out" style="margin-top:10px;font-family:var(--mono);font-size:.75rem;color:var(--txt3)"></div>
+  </div>
+
+  <div class="card">
+    <div class="ct">📦 ÚLTIMAS COMPRAS HOY</div>
+    ${listaC(db.compras.filter(c=>c.fecha===hoy()).slice(-8).reverse(),false)}
+  </div>`;
+}
+
+function onFoto(inp){
+  const file=inp.files[0];if(!file)return;
+  const prev=document.getElementById('foto-prev');
+  prev.style.display='block';prev.src=URL.createObjectURL(file);
+  const reader=new FileReader();
+  reader.onload=e=>{
+    fB64=e.target.result.split(',')[1];fMime=file.type;
+    document.getElementById('ia-st').innerHTML=`<div class="loading"><div class="spin"></div>Analizando imagen con IA…</div>`;
+    document.getElementById('ia-res').innerHTML='';
+    analizarFoto();
+  };
+  reader.readAsDataURL(file);
+}
+
+async function analizarFoto(){
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':getApiKey(),'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',max_tokens:1000,
+        messages:[{role:'user',content:[
+          {type:'image',source:{type:'base64',media_type:fMime,data:fB64}},
+          {type:'text',text:`Sos asistente de una verdulería paraguaya. Analizá esta remito.
+Extraé TODOS los productos. Respondé SOLO con JSON válido sin texto extra ni backticks.
+Los precios están en miles de guaraníes (300 = 300000).
+Si la cantidad es múltiplo de 12 (12,24,36) el precio es TOTAL no unitario.
+Formato: [{"nombre":"tomate","cantidad":25,"tipo":"caja","precioUnit":150000,"pendiente":false}]
+tipo=kilo|caja|unidad. Sin precio: precioUnit=0,pendiente=true. nombre en minúsculas.`}
+        ]}]
+      })
+    });
+    const data=await res.json();
+    const txt=data.content.map(b=>b.text||'').join('');
+    prevFoto=JSON.parse(txt.replace(/```json|```/g,'').trim());
+    document.getElementById('ia-st').innerHTML='';
+    mostrarPrevFoto(prevFoto);
+  }catch(err){
+    document.getElementById('ia-st').innerHTML=`<div style="color:var(--danger);font-family:var(--mono);font-size:.75rem;margin-top:8px">❌ ${err.message} — configurá tu API key en Ajustes</div>`;
+  }
+}
+
+function getApiKey(){return localStorage.getItem('verdapp_apikey')||'';}
+
+function mostrarPrevFoto(items){
+  if(!items.length){document.getElementById('ia-res').innerHTML='<div style="color:var(--warn);font-family:var(--mono);font-size:.75rem;margin-top:8px">No encontré productos</div>';return;}
+  const rows=items.map((it,i)=>`<tr>
+    <td><input value="${it.nombre}" onchange="prevFoto[${i}].nombre=this.value" style="min-width:75px"/></td>
+    <td><input type="number" value="${it.cantidad}" onchange="prevFoto[${i}].cantidad=+this.value" style="width:55px"/></td>
+    <td><select onchange="prevFoto[${i}].tipo=this.value">
+      <option ${it.tipo==='kilo'?'selected':''}>kilo</option>
+      <option ${it.tipo==='caja'?'selected':''}>caja</option>
+      <option ${it.tipo==='unidad'?'selected':''}>unidad</option>
+    </select></td>
+    <td><input type="number" value="${it.precioUnit}" onchange="prevFoto[${i}].precioUnit=+this.value" style="width:85px"/></td>
+    <td>${it.pendiente?'<span class="badge bpd">PEND</span>':'<span class="badge bok">OK</span>'}</td>
+  </tr>`).join('');
+  document.getElementById('ia-res').innerHTML=`
+    <div style="overflow-x:auto;margin-top:10px">
+      <table class="ptable">
+        <thead><tr><th>PRODUCTO</th><th>CANT</th><th>TIPO</th><th>PRECIO Gs.</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button class="btn bg bfull" onclick="confirmarFoto()">✅ GUARDAR ${items.length} PRODUCTOS</button>
+      <button class="btn bghost bsm" onclick="document.getElementById('ia-res').innerHTML='';prevFoto=[]">✕</button>
+    </div>`;
+}
+
+function confirmarFoto(){
+  prevFoto.forEach(it=>{
+    db.compras.push({id:uid(),fecha:hoy(),nombre:it.nombre,tipo:it.tipo||'unidad',
+      cantidad:it.cantidad||1,precioUnit:it.precioUnit||0,
+      precioTotal:(it.precioUnit||0)*(it.cantidad||1),
+      estado:'normal',pendiente:it.pendiente||it.precioUnit===0});
+  });
+  saveDB();toast(`✅ ${prevFoto.length} productos guardados`);prevFoto=[];render();
+}
+
+function procesarTexto(){
+  const texto=document.getElementById('txt-m').value.trim();
+  if(!texto){toast('⚠️ Escribí o pegá productos primero');return;}
+  // Guardar fecha seleccionada globalmente para esta carga
+  const fechaEl=document.getElementById('txt-fecha');
+  window.fechaCargaActual = fechaEl ? fechaEl.value : hoy();
+  document.getElementById('txt-res').innerHTML=`<div class="loading"><div class="spin"></div>Procesando…</div>`;
+  procesarTextoIA(texto);
+}
+
+async function procesarTextoIA(texto){
+  try{
+    const key=getApiKey();
+    if(!key) throw new Error('Sin API key');
+    const rangos=[
+      'zanahoria: 90000-150000','papa: 70000-120000','cebolla: 50000-100000',
+      'tomate: 100000-200000','banana: 80000-200000','locote: 100000-200000',
+      'manzana: 200000-400000','pera: 150000-350000','uva: 180000-350000',
+      'ciruela: 180000-300000','mandarina: 150000-400000','zapallo: 150000-300000',
+      'repollo: 100000-200000','pepino: 80000-150000','berenjena: 80000-150000',
+      'remolacha: 100000-180000','calabacita: 80000-150000','zapallito: 60000-120000',
+      'verdeos (acelga/apio/perejil/kuratu/espinaca/cebollita/oregano/albahaca): 10000-80000'
+    ].join('\n');
+    const prompt='Actuá como motor de interpretación de listas de precios para verdulería paraguaya.\n'+
+      'Los precios están en miles de guaraníes (300 = 300.000 Gs).\n\n'+
+      'RANGOS DE PRECIO UNITARIO ESPERADO (Gs.):\n'+rangos+'\n\n'+
+      'PROCESO para cada línea:\n'+
+      '1. Detectar producto, cantidad y valor\n'+
+      '2. Probar valor como unitario → ¿está en rango?\n'+
+      '3. Probar valor÷cantidad como unitario → ¿está en rango?\n'+
+      '4. Elegir la opción coherente con el rango\n'+
+      '5. Si hay duda → confianza baja\n\n'+
+      'REGLAS:\n'+
+      '- No inventar datos. Ignorar fechas y totales generales.\n'+
+      '- "sin precio" o "s/p" → pendiente=true, precioUnit=0\n'+
+      '- "dañado" → estado=dañado\n'+
+      '- "faltan" → estado=faltante\n'+
+      '- Día de semana mencionado → campo dia\n'+
+      '- Nombres en minúsculas CONSERVANDO el nombre completo: variedad, origen y tamaño\n'+
+      '- NUNCA abreviés: "mamon brasil grande" no es "mamon", "zapallo brasil" no es "zapallo"\n'+
+      '- Ejemplos correctos: mamon brasil grande, mamon brasil chico, mamon nacional,\n'+
+      '  zapallo brasil, melon nacional, melon japones, mandarina argentina, banana de oro\n\n'+
+      'LISTA:\n'+texto+'\n\n'+
+      'SOLO JSON puro sin texto ni backticks:\n'+
+      '[{"nombre":"tomate","cantidad":15,"tipo":"caja","precioUnit":150000,"precioTotal":2250000,"tipo_precio":"unitario","confianza":"alta","pendiente":false,"estado":"normal","dia":null}]';
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:prompt}]})
+    });
+    const data=await res.json();
+    const txt=data.content.map(b=>b.text||'').join('');
+    const parsed=JSON.parse(txt.replace(/```json|```/g,'').trim());
+    prevTexto=parsed.map(it=>({
+      nombre:it.nombre||'',cantidad:it.cantidad||1,tipo:it.tipo||'unidad',
+      precioUnit:it.precioUnit||0,
+      precioTotal:it.precioTotal||(it.precioUnit*(it.cantidad||1)),
+      pendiente:it.pendiente||it.precioUnit===0,
+      estado:it.estado||'normal',dia:it.dia||null,confianza:it.confianza||'alta'
+    }));
+    mostrarPrevTexto(prevTexto);
+  }catch(err){
+    prevTexto=parsearLocal(texto);
+    mostrarPrevTexto(prevTexto);
+  }
+}
+
+function parsearLocal(texto){
+  const limpiar=l=>l.replace(/[~]{2}.*?[~]{2}/g,'').replace(/[✓✗×]/g,'').trim();
+  return texto.split('\n').map(l=>limpiar(l.trim())).filter(Boolean).map(l=>{
+    const t=normalizarTexto(l);
+    if(/^total/i.test(t))return null;
+    if(/^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$/.test(t.trim()))return null;
+    const sinPrecio=t.includes('sin precio')||t.includes('pendiente')||t.includes('s/p');
+    const danado=t.includes('danado');
+    const faltante=t.startsWith('falta');
+    const diaPal=DS.find(d=>t.includes(d));
+    const tm={kilo:'kilo',kilos:'kilo',kg:'kilo',caja:'caja',cajas:'caja',unidad:'unidad',und:'unidad',paquete:'unidad',paquetes:'unidad',docena:'unidad',docenas:'unidad'};
+    let tipo='unidad';
+    for(const[k,v]of Object.entries(tm)){if(t.includes(k)){tipo=v;break;}}
+    // Si dice explícitamente "kilos" o "kg" entre cantidad y precio → tipo kilo
+    const tieneKilosExplicito = /\d+\s*(kilos?|kg)\s*\d+/i.test(l);
+    if(tieneKilosExplicito) tipo='kilo';
+    // Solo eliminar palabras que no aportan al nombre del producto
+    // IMPORTANTE: 'nacional','brasil','grande','chico','japones' se CONSERVAN
+    // porque diferencian variantes (mamón nacional vs mamón brasil grande)
+    // Solo eliminar palabras de medida — NUNCA palabras descriptoras del producto
+    const reserv=new Set(['kilo','kilos','kg','caja','cajas','unidad','unidades','und',
+      'paquete','paquetes','docena','docenas','sin','precio','pendiente','danado',
+      'falta','faltante','de','del','la','el','los','las','uno','una',...DS]);
+    const nombreTokens=t.split(/\s+/).filter(x=>!reserv.has(x)&&!/^\d+(\.\d+)?$/.test(x)&&!DS.some(d=>x.startsWith(d))&&x.length>1);
+    // Reconstruir nombre completo preservando orden original
+    const nombre=nombreTokens.join(' ').trim()||'producto';
+    // Usar tipo aprendido si no se detectó explícitamente en el texto
+    const tipoExplicito=Object.keys(tm).some(k=>t.includes(k));
+    if(!tipoExplicito){ const tipoMem=getTipoAprendido(nombre); if(tipoMem) tipo=tipoMem; }
+    const nums=(t.match(/\d+(\.\d+)?/g)||[]).map(Number);
+    let cantidad=1,precioUnit=0,precioTotal=0,tipo_precio='unitario',confianza='media';
+    if(sinPrecio){
+      cantidad=nums[0]||1;
+    }
+    else if(t.includes('docena') && nums.length>=2){
+      const docenas=nums[0]||1;
+      cantidad=docenas*12;
+      const valor=nums[nums.length-1];
+      const info=interpretarPrecioCantidad(nombre,cantidad,valor);
+      precioUnit=info.precioUnit;
+      precioTotal=info.precioTotal;
+      tipo_precio=info.tipo_precio;
+      confianza=info.confianza;
+    }
+    else if(nums.length>=3){
+      cantidad=nums[0]||1;
+      const valorUnit=expandirPrecio(nums[1]);
+      const valorTotal=expandirPrecio(nums[2]);
+      if(valorTotal && valorUnit && Math.abs(valorUnit*cantidad-valorTotal)<=Math.max(1000, valorTotal*0.05)){
+        precioUnit=valorUnit;
+        precioTotal=valorTotal;
+        tipo_precio='mixto';
+        confianza='alta';
+      } else {
+        const info=interpretarPrecioCantidad(nombre,cantidad,nums[nums.length-1]);
+        precioUnit=info.precioUnit;
+        precioTotal=info.precioTotal;
+        tipo_precio=info.tipo_precio;
+        confianza=info.confianza;
+      }
+    }
+    else if(nums.length===2){
+      cantidad=nums[0]||1;
+      const info=interpretarPrecioCantidad(nombre,cantidad,nums[1]);
+      precioUnit=info.precioUnit;
+      precioTotal=info.precioTotal;
+      tipo_precio=info.tipo_precio;
+      confianza=info.confianza;
+    }
+    else if(nums.length===1){
+      cantidad=1;
+      precioUnit=expandirPrecio(nums[0]);
+      precioTotal=precioUnit;
+      confianza=getPriceHint(nombre)?'alta':'media';
+    }
+    if(!precioTotal&&precioUnit)precioTotal=precioUnit*cantidad;
+    return{
+      nombre,cantidad,tipo,precioUnit,precioTotal,tipo_precio,confianza,
+      pendiente:sinPrecio||precioUnit===0,
+      estado:danado?'dañado':faltante?'faltante':'normal',
+      dia:diaPal||null
+    };
+  }).filter(Boolean);
+}
+
+function mostrarPrevTexto(items){
+  if(!items.length){document.getElementById('txt-res').innerHTML='<div style="color:var(--warn);font-family:var(--mono);font-size:.75rem;margin-top:8px">No encontré productos</div>';return;}
+  // Asegurar que precioTotal esté calculado
+  items.forEach(it=>{ if(!it.precioTotal&&it.precioUnit) it.precioTotal=it.precioUnit*it.cantidad; });
+  const alta=items.filter(i=>i.confianza==='alta'||!i.confianza).length;
+  const media=items.filter(i=>i.confianza==='media').length;
+  const baja=items.filter(i=>i.confianza==='baja').length;
+
+  const rows=items.map((it,i)=>{
+    const bgRow = it.confianza==='baja'
+      ? 'background:rgba(248,113,113,.08);border-left:3px solid var(--danger)'
+      : it.confianza==='media'
+      ? 'background:rgba(251,191,36,.05);border-left:3px solid var(--warn)'
+      : 'border-left:3px solid transparent';
+    const variacion = detectarVariacion(it.nombre, it.precioUnit);
+    const varBadge = variacion
+      ? `<span style="background:${variacion.sube?'#2e0d0d':'#0d2e18'};color:${variacion.sube?'var(--danger)':'var(--accent)'};padding:2px 6px;border-radius:6px;font-size:.62rem;font-family:var(--mono);font-weight:700;display:block;margin-top:2px">
+          ${variacion.sube?'▲ SUBE':'▼ BAJA'} ${Math.abs(variacion.pct)}%
+        </span>` : '';
+    const confBadge = it.confianza==='baja'
+      ? `<span style="background:#2e0d0d;color:var(--danger);padding:3px 7px;border-radius:8px;font-size:.65rem;font-family:var(--mono);font-weight:700">⚠️ REVISAR</span>${varBadge}`
+      : it.confianza==='media'
+      ? `<span style="background:#2e1f00;color:var(--warn);padding:3px 7px;border-radius:8px;font-size:.65rem;font-family:var(--mono);font-weight:700">~ VERIFICAR</span>${varBadge}`
+      : `<span style="background:#1a2e0d;color:#4ade80;padding:3px 7px;border-radius:8px;font-size:.65rem;font-family:var(--mono);font-weight:700">✓ OK</span>${varBadge}`;
+    return`<tr id="prev-row-${i}" style="${bgRow}">
+    <td><input value="${it.nombre}" onchange="prevTexto[${i}].nombre=this.value" style="min-width:65px"/></td>
+    <td><input type="number" value="${it.cantidad}" onchange="prevTexto[${i}].cantidad=+this.value;recalcPrevRow(${i},'cant')" style="width:46px"/></td>
+    <td><select onchange="prevTexto[${i}].tipo=this.value">
+      <option ${it.tipo==='kilo'?'selected':''}>kilo</option>
+      <option ${it.tipo==='caja'?'selected':''}>caja</option>
+      <option ${it.tipo==='unidad'?'selected':''}>unidad</option>
+    </select></td>
+    <td><input type="number" id="pu-${i}" value="${it.precioUnit}" placeholder="unit"
+      onchange="prevTexto[${i}].precioUnit=+this.value;recalcPrevRow(${i},'unit')" style="width:78px"/></td>
+    <td><input type="number" id="pt-${i}" value="${it.precioTotal}" placeholder="total"
+      onchange="prevTexto[${i}].precioTotal=+this.value;recalcPrevRow(${i},'total')" style="width:78px;color:#4ade80"/></td>
+    <td>${confBadge}</td>
+  </tr>`;}).join('');
+
+  document.getElementById('txt-res').innerHTML=`
+    <div style="display:flex;gap:8px;margin-top:10px;margin-bottom:8px;flex-wrap:wrap">
+      <span style="background:#1a2e0d;color:#4ade80;padding:5px 10px;border-radius:8px;font-family:var(--mono);font-size:.72rem;font-weight:700">✓ ${alta} seguros</span>
+      ${media?`<span style="background:#2e1f00;color:var(--warn);padding:5px 10px;border-radius:8px;font-family:var(--mono);font-size:.72rem;font-weight:700">~ ${media} verificar</span>`:''}
+      ${baja?`<span style="background:#2e0d0d;color:var(--danger);padding:5px 10px;border-radius:8px;font-family:var(--mono);font-size:.72rem;font-weight:700">⚠️ ${baja} revisar</span>`:''}
+    </div>
+    <p style="font-family:var(--mono);font-size:.68rem;color:var(--txt3);margin-bottom:8px">
+      Editá <b style="color:var(--txt2)">UNIT.</b> → recalcula total &nbsp;|&nbsp; Editá <b style="color:#4ade80">TOTAL</b> → recalcula unitario
+    </p>
+    <div style="overflow-x:auto">
+      <table class="ptable">
+        <thead><tr><th>PRODUCTO</th><th>CANT</th><th>TIPO</th><th>UNIT. Gs.</th><th style="color:#4ade80">TOTAL Gs.</th><th>CONFIANZA</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <button class="btn bg bfull" style="margin-top:10px" onclick="confirmarTexto()">
+      ✅ GUARDAR ${items.length} PRODUCTOS
+    </button>`;
+}
+
+function recalcPrevRow(i, changed){
+  const it=prevTexto[i];
+  const puEl=document.getElementById('pu-'+i);
+  const ptEl=document.getElementById('pt-'+i);
+  if(!puEl||!ptEl)return;
+  if(changed==='unit'||changed==='cant'){
+    // Cambiaron unitario o cantidad → recalcular total
+    it.precioTotal=it.precioUnit*it.cantidad;
+    it.pendiente=it.precioUnit===0;
+    ptEl.value=it.precioTotal;
+    ptEl.style.color='var(--accent)';
+  } else if(changed==='total'){
+    // Cambiaron total → recalcular unitario
+    it.precioUnit=it.cantidad>0?Math.round(it.precioTotal/it.cantidad):it.precioTotal;
+    it.pendiente=it.precioTotal===0;
+    puEl.value=it.precioUnit;
+  }
+}
+
+function confirmarTexto(){
+  let aprendidos=0;
+  prevTexto.forEach(it=>{
+    const fechaBase = window.fechaCargaActual || hoy();
+    const fecha=it.dia?(diaF(it.dia)||fechaBase):fechaBase;
+    const pt=it.precioTotal||(it.precioUnit*it.cantidad);
+    db.compras.push({id:uid(),fecha,nombre:it.nombre,tipo:it.tipo,
+      cantidad:it.cantidad,precioUnit:it.precioUnit,
+      precioTotal:pt,
+      estado:it.estado||'normal',pendiente:it.pendiente||it.precioUnit===0});
+    // Aprender precio si tiene precio real (no pendiente)
+    if(!it.pendiente && it.precioUnit > 0) {
+      aprenderPrecio(it.nombre, it.precioUnit, it.tipo);
+      aprendidos++;
+    }
+  });
+  saveDB();
+  toast(`✅ ${prevTexto.length} guardados · 🧠 ${aprendidos} precios aprendidos`);
+  prevTexto=[];
+  document.getElementById('txt-m').value='';render();
+}
+
+function onCmd(){
+  const raw=document.getElementById('cmd').value.trim();if(!raw)return;
+  const r=parsCmd(raw);
+  const el=document.getElementById('cmd-out');
+  if(r.ok){saveDB();el.style.color='var(--accent)';el.textContent='✅ '+r.msg;toast('✅ Registrado');render();}
+  else{el.style.color='var(--danger)';el.textContent='❌ '+r.msg;}
+}
+
+/* ── DESCUENTO COMPLETO: "no vino banana" ── */
+function descontarCompleto(nombre, nota){
+  const n = normalizarTexto(nombre);
+  // Buscar la compra más reciente de ese producto
+  const found = [...db.compras]
+    .reverse()
+    .filter(c => normalizarTexto(c.nombre).includes(n) || n.includes(normalizarTexto(c.nombre)));
+  if(!found.length){
+    return{ok:false,msg:`No encontré compras de "${nombre}". Verificá el nombre.`};
+  }
+  const compra = found[0];
+  // Marcar como faltante y registrar descuento
+  compra.estado = 'faltante';
+  compra.nota = nota;
+  saveDB();
+  return{ok:true,msg:`✅ "${compra.nombre}" marcado como NO VINO
+Descuento: ${fm(compra.precioTotal)} del ${lbl(compra.fecha)}`};
+}
+
+/* ── DESCUENTO POR KILO: "descompuesto 8 kilos banana" ── */
+function descontarPorKilo(nombre, kilos, nota){
+  const n = normalizarTexto(nombre);
+  let precioPorKg = 0;
+  let fuente = '';
+
+  // PASO 1: Tabla de pesos → precio/kg REAL = precioCompra ÷ pesoNeto
+  const pesoRow = pesoRows.find(r =>
+    normalizarTexto(r.producto).includes(n) || n.includes(normalizarTexto(r.producto))
+  );
+  if(pesoRow && Number(pesoRow.pesoNeto) > 0 && Number(pesoRow.precioCompra) > 0){
+    precioPorKg = Math.round(Number(pesoRow.precioCompra) / Number(pesoRow.pesoNeto));
+    fuente = pesoRow.producto + ': ' + fm(pesoRow.precioCompra) + ' / ' + pesoRow.pesoNeto + 'kg netos = ' + fm(precioPorKg) + '/kg';
+  }
+
+  // PASO 2: Última compra registrada en kilos
+  if(!precioPorKg){
+    const compraKilo = [...db.compras].reverse()
+      .find(c => normalizarTexto(c.nombre).includes(n) && c.tipo==='kilo' && !c.pendiente && c.precioUnit > 0);
+    if(compraKilo){
+      precioPorKg = compraKilo.precioUnit;
+      fuente = 'última compra en kilos: ' + fm(precioPorKg) + '/kg';
+    }
+  }
+
+  // PASO 3: Preguntar — aclarar que necesita precio POR KILO no por caja
+  if(!precioPorKg){
+    const input = prompt(
+      'No encontré precio/kg de "' + nombre + '" en tabla de pesos.\n' +
+      'Ingresá el precio por KILO en Gs.\n' +
+      '(Ej: si la caja costó 120.000 y pesa 28kg → escribí 4285)'
+    );
+    if(!input) return{ok:false,msg:'Cancelado'};
+    precioPorKg = +input.replace(/[^0-9]/g,'');
+    fuente = 'ingresado manualmente';
+    if(!precioPorKg) return{ok:false,msg:'Precio inválido'};
+  }
+
+  const montoDescuento = Math.round(precioPorKg * kilos);
+  db.compras.push({
+    id:uid(), fecha:hoy(), nombre,
+    tipo:'kilo', cantidad:kilos,
+    precioUnit:precioPorKg, precioTotal:montoDescuento,
+    estado:'dañado', pendiente:false, nota
+  });
+  saveDB();
+  return{ok:true,msg:'✅ Descuento: ' + kilos + 'kg de ' + nombre + ' × ' + fm(precioPorKg) + '/kg = ' + fm(montoDescuento) + '\n📌 ' + fuente};
+}
+
+
+function parsCmd(raw){
+  const t=raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const tks=t.split(/\s+/);
+
+  // ── NO VINO → descuento completo ───────────────────────────
+  if(t.includes('no vino')){
+    const skipNoVino = new Set(['no','vino','el','la','los','las','de','del']);
+    const nombre = tks.filter(x=>!skipNoVino.has(x)&&!/^\d+$/.test(x)).join(' ').trim();
+    if(!nombre) return{ok:false,msg:'¿Qué producto no vino? Ej: no vino banana'};
+    return descontarCompleto(nombre, raw);
+  }
+
+  // ── DESCUENTO POR KILO → descompuesto/podrido/malo + N kilos ─
+  const PALABRAS_KILO = ['descontar','desconta','descompuesto','podrido','malo','danado','dañado','descuento'];
+  const esDescuentoKilo = PALABRAS_KILO.some(p=>t.includes(p));
+  if(esDescuentoKilo){
+    const skipKilo = new Set(['descontar','desconta','descompuesto','podrido','malo','danado',
+      'dañado','descuento','kilo','kilos','kg','de','del','la','el','los','las']);
+    const nums = tks.filter(x=>/^\d+(\.\d+)?$/.test(x)).map(Number);
+    const cantKilos = nums[0]||0;
+    const nombre = tks.filter(x=>!skipKilo.has(x)&&!/^\d+(\.\d+)?$/.test(x)&&!DS.some(d=>x.startsWith(d))).join(' ').trim();
+    if(!nombre) return{ok:false,msg:'Ej: descompuesto 8 kilos banana'};
+    if(!cantKilos) return{ok:false,msg:'¿Cuántos kilos? Ej: descompuesto 8 kilos banana'};
+    return descontarPorKilo(nombre, cantKilos, raw);
+  }
+
+  if(t.startsWith('agregar precio')||t.startsWith('actualizar precio')||t.startsWith('precio')){
+    const nums=tks.filter(x=>/^\d+$/.test(x));
+    const precio=nums.length?+nums[nums.length-1]:null;
+    const dP=tks.find(x=>DS.some(d=>x.startsWith(d)));
+    const fecha=dP?diaF(dP)||hoy():hoy();
+    const skip=new Set(['agregar','actualizar','precio','del','de']);
+    const nombre=tks.filter(x=>!skip.has(x)&&!/^\d+$/.test(x)&&!DS.some(d=>x.startsWith(d))).join(' ').trim();
+    if(!precio||!nombre)return{ok:false,msg:'Ej: agregar precio tomate martes 150000'};
+    const found=db.compras.filter(c=>c.nombre.toLowerCase().includes(nombre)&&c.fecha===fecha);
+    if(!found.length)return{ok:false,msg:`No encontré ${nombre} el ${lbl(fecha)}`};
+    found.forEach(c=>{c.precioUnit=expandirPrecio(precio);c.precioTotal=expandirPrecio(precio)*c.cantidad;c.pendiente=false;});
+    return{ok:true,msg:`${found.length} registro(s) de ${nombre} → ${fm(expandirPrecio(precio))}`};
+  }
+  if(tks[0]==='gasto'){
+    const monto=expandirPrecio(+(tks.find(x=>/^\d+$/.test(x))||0));
+    const tipo=['desayuno','despensa','transporte','herramienta','otros'].find(tp=>t.includes(tp))||'otros';
+    db.gastos.push({id:uid(),fecha:hoy(),monto,tipo,nota:raw});
+    return{ok:true,msg:`Gasto ${tipo} ${fm(monto)}`};
+  }
+  if(tks[0]==='venta'||tks[0]==='ventas'){
+    const monto=expandirPrecio(+(tks.find(x=>/^\d+$/.test(x))||0));
+    const km={efectivo:'efectivo',transf:'transferencia',transferencia:'transferencia',pos:'pos'};
+    const k=Object.keys(km).find(m=>t.includes(m));
+    if(!monto||!k)return{ok:false,msg:'Ej: venta efectivo 200000'};
+    const key=km[k],hv=db.ventas.find(v=>v.fecha===hoy());
+    if(hv){hv[key]=(hv[key]||0)+monto;hv.total=(hv.efectivo||0)+(hv.transferencia||0)+(hv.pos||0);}
+    else db.ventas.push({id:uid(),fecha:hoy(),efectivo:0,transferencia:0,pos:0,total:monto,[key]:monto});
+    return{ok:true,msg:`Venta ${key} ${fm(monto)}`};
+  }
+  if(['faltan','faltante','falta'].includes(tks[0])){
+    const cant=+(tks.find(x=>/^\d+$/.test(x))||1);
+    const tm={kilo:'kilo',kilos:'kilo',caja:'caja',cajas:'caja',unidad:'unidad'};
+    const tipo=Object.keys(tm).find(x=>t.includes(x))||'unidad';
+    const nombre=tks.filter(x=>!['faltan','faltante','falta','de','del',tipo,String(cant)].includes(x)&&!/^\d+$/.test(x)).join(' ')||'producto';
+    db.compras.push({id:uid(),fecha:hoy(),nombre,tipo:tm[tipo],cantidad:cant,precioUnit:0,precioTotal:0,estado:'faltante',pendiente:true});
+    return{ok:true,msg:`Faltante: ${cant} ${tipo} de ${nombre}`};
+  }
+  if(t.includes('dañado')||t.includes('danado')){
+    const nombre=tks.filter(x=>!['dañado','danado','esta','viene','el','la'].includes(x)).join(' ')||'producto';
+    db.compras.push({id:uid(),fecha:hoy(),nombre,tipo:'unidad',cantidad:1,precioUnit:0,precioTotal:0,estado:'dañado',pendiente:true});
+    return{ok:true,msg:`Dañado: ${nombre}`};
+  }
+  const sinPrecio=t.includes('sin precio')||t.includes('pendiente');
+  const nums=tks.filter(x=>/^\d+$/.test(x)).map(Number);
+  const dP=tks.find(x=>DS.some(d=>x.startsWith(d)));
+  const fecha=dP?diaF(dP)||hoy():hoy();
+  const tiposMap={kilo:'kilo',kilos:'kilo',kg:'kilo',caja:'caja',cajas:'caja',unidad:'unidad',und:'unidad'};
+  let tipo='unidad';for(const[k,v]of Object.entries(tiposMap)){if(t.includes(k)){tipo=v;break;}}
+  const reserv=new Set(['kilo','kilos','kg','caja','cajas','unidad','und','sin','precio','pendiente','de','del','la','el']);
+  const nombre=tks.filter(x=>!reserv.has(x)&&!/^\d+$/.test(x)&&!DS.some(d=>x.startsWith(d))).join(' ').trim();
+  if(!nombre)return{ok:false,msg:'No entendí. Ej: tomate 25 cajas 150000'};
+  let cant=1,pu=0,pt=0;
+  if(sinPrecio){cant=nums[0]||1;}
+  else if(nums.length>=2){
+    // 2do número = precio unitario, total = cant × unit
+    cant=nums[0]; pu=expandirPrecio(nums[1]); pt=pu*cant;
+  }
+  else if(nums.length===1){pu=expandirPrecio(nums[0]);pt=pu;}
+  db.compras.push({id:uid(),fecha,nombre,tipo,cantidad:cant,precioUnit:pu,precioTotal:pt,estado:'normal',pendiente:sinPrecio||pu===0});
+  return{ok:true,msg:`${nombre} · ${cant} ${tipo} · ${sinPrecio?'sin precio':fm(pu)}`};
+}
+
+/* ═══════════════════════════════════════════════════════
+   COMPRAS
+═══════════════════════════════════════════════════════ */
+function pgCompras(){
+  return`
+  <div class="card">
+    <div class="ct">➕ NUEVA COMPRA</div>
+    <form id="form-compra">
+      <div class="g2">
+        <div><label>PRODUCTO</label><input name="nombre" placeholder="Tomate…" required/></div>
+        <div><label>TIPO</label><select name="tipo"><option>kilo</option><option>caja</option><option>unidad</option></select></div>
+      </div>
+      <div class="g3">
+        <div><label>CANTIDAD</label><input name="cantidad" type="number" step="0.1" min="0" required/></div>
+        <div><label>PRECIO UNIT. Gs.</label><input name="precio" type="number" min="0" placeholder="150000"/></div>
+        <div><label>FECHA</label><input name="fecha" type="date" value="${hoy()}" required/></div>
+      </div>
+      <div class="g2" style="margin-bottom:14px">
+        <div><label>ESTADO</label><select name="estado"><option value="normal">Normal</option><option value="dañado">Dañado</option><option value="faltante">Faltante</option></select></div>
+        <div style="display:flex;align-items:flex-end;padding-bottom:2px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--txt2);font-size:.82rem">
+            <input name="pendiente" type="checkbox" style="width:auto"/> Sin precio aún
+          </label>
+        </div>
+      </div>
+      <button type="submit" class="btn bg bfull">REGISTRAR</button>
+    </form>
+  </div>
+  <div class="card">
+    <div class="ct">📦 HISTORIAL</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center">
+      <input type="date" id="f-fecha" style="flex:1" oninput="filtrarC()"/>
+      <button class="btn bghost bsm" onclick="verTodas()">Ver todas</button>
+    </div>
+    <div id="borrar-fecha-btn"></div>
+    <div id="lista-c">${listaAgrupada([...db.compras].reverse())}</div>
+  </div>`;
+}
+
+function filtrarC(){
+  const f=document.getElementById('f-fecha').value;
+  const lista=f?db.compras.filter(c=>c.fecha===f):[...db.compras];
+  const contenido=f?listaC([...lista].reverse(),true):listaAgrupada([...db.compras].reverse());
+  document.getElementById('lista-c').innerHTML=contenido;
+  const btnEl=document.getElementById('borrar-fecha-btn');
+  if(btnEl){
+    if(f && lista.length){
+      btnEl.innerHTML=`<button class="btn bred bfull" style="margin-bottom:10px"
+        onclick="borrarFechaCompleta('${f}')">
+        🗑️ BORRAR TODOS LOS PRODUCTOS DEL ${lbl(f)} (${lista.length})
+      </button>`;
+    } else {
+      btnEl.innerHTML='';
+    }
+  }
+}
+
+// Lista agrupada por fecha — para vista general sin filtro
+function listaAgrupada(lista){
+  if(!lista.length) return`<div class="empty"><div class="ico">📦</div>Sin compras</div>`;
+  // Agrupar por fecha
+  const grupos={};
+  lista.forEach(c=>{
+    if(!grupos[c.fecha]) grupos[c.fecha]=[];
+    grupos[c.fecha].push(c);
+  });
+  // Ordenar fechas más recientes primero
+  return Object.keys(grupos).sort().reverse().map(fecha=>{
+    const items=grupos[fecha];
+    const total=items.filter(c=>!c.pendiente&&c.estado!=='dañado'&&c.estado!=='faltante')
+                     .reduce((s,c)=>s+c.precioTotal,0);
+    const descuentos=items.filter(c=>c.estado==='dañado'||c.estado==='faltante')
+                          .reduce((s,c)=>s+c.precioTotal,0);
+    return`
+    <div style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;
+        padding:8px 10px;background:var(--bg3);border-radius:10px;margin-bottom:8px">
+        <div>
+          <div style="font-family:var(--mono);font-size:.78rem;color:var(--txt2);font-weight:700">${lbl(fecha)}</div>
+          <div style="font-family:var(--mono);font-size:.67rem;color:var(--txt3)">${items.length} productos</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-family:var(--mono);font-size:.85rem;color:var(--accent)">${fm(total)}</div>
+          ${descuentos?`<div style="font-family:var(--mono);font-size:.67rem;color:var(--danger)">- ${fm(descuentos)}</div>`:''}
+        </div>
+      </div>
+      ${listaC(items,true)}
+    </div>`;
+  }).join('');
+}
+
+function verTodas(){
+  document.getElementById('f-fecha').value='';
+  filtrarC();
+}
+
+function borrarFechaCompleta(fecha){
+  const count=db.compras.filter(c=>c.fecha===fecha).length;
+  if(!confirm('¿Eliminar los '+count+' productos del '+lbl(fecha)+'?'))return;
+  db.compras=db.compras.filter(c=>c.fecha!==fecha);
+  saveDB();
+  document.getElementById('f-fecha').value='';
+  filtrarC();
+  toast('🗑️ '+count+' productos eliminados');
+}
+
+function listaC(lista,editable){
+  if(!lista.length)return`<div class="empty"><div class="ico">📦</div>Sin compras</div>`;
+  return lista.map(c=>{
+    const eb=c.estado==='dañado'?`<span class="badge brd">DAÑADO</span>`:c.estado==='faltante'?`<span class="badge bwn">FALTANTE</span>`:`<span class="badge bok">OK</span>`;
+    const pb=c.pendiente?`<span class="badge bpd">SIN PRECIO</span>`:'';
+    const amt=c.pendiente?`<span style="color:var(--txt3);font-size:.75rem">—</span>`:fm(c.precioTotal);
+    const btns=editable?`<div style="display:flex;gap:5px"><button class="btn bghost bsm" onclick="openEdit('${c.id}')">✏️</button><button class="btn bred bsm" onclick="delC('${c.id}')">✕</button></div>`:'';
+    return`<div class="li">
+      <div class="lim"><div class="lin">${c.nombre} ${eb} ${pb}</div><div class="lis">${lbl(c.fecha)} · ${c.cantidad} ${c.tipo}${!c.pendiente?' · '+fm(c.precioUnit)+'/'+c.tipo:''}</div></div>
+      <div style="display:flex;align-items:center;gap:6px"><div class="lia">${amt}</div>${btns}</div>
+    </div>`;
+  }).join('');
+}
+
+function onCompra(e){
+  e.preventDefault();const f=e.target;
+  const precio=+f.precio.value||0,cant=+f.cantidad.value||1,pend=f.pendiente.checked||precio===0;
+  db.compras.push({id:uid(),fecha:f.fecha.value,nombre:f.nombre.value.trim(),tipo:f.tipo.value,cantidad:cant,precioUnit:precio,precioTotal:pend?0:precio*cant,estado:f.estado.value,pendiente:pend});
+  saveDB();f.reset();f.fecha.value=hoy();toast('✅ Compra registrada');render();
+}
+function delC(id){if(!confirm('¿Eliminar?'))return;db.compras=db.compras.filter(c=>c.id!==id);saveDB();render();toast('🗑️');}
+function openEdit(id){
+  const c=db.compras.find(x=>x.id===id);if(!c)return;
+  document.getElementById('e-id').value=id;
+  document.getElementById('e-nom').value=c.nombre;
+  document.getElementById('e-tipo').value=c.tipo;
+  document.getElementById('e-cant').value=c.cantidad;
+  document.getElementById('e-precio').value=c.precioUnit||'';
+  document.getElementById('m-edit').style.display='flex';
+}
+function closeEdit(e){if(!e||e.target===document.getElementById('m-edit'))document.getElementById('m-edit').style.display='none';}
+function saveEdit(){
+  const id=document.getElementById('e-id').value;
+  const c=db.compras.find(x=>x.id===id);if(!c)return;
+  c.nombre=document.getElementById('e-nom').value;
+  c.tipo=document.getElementById('e-tipo').value;
+  c.cantidad=+document.getElementById('e-cant').value||1;
+  c.precioUnit=+document.getElementById('e-precio').value||0;
+  c.precioTotal=c.precioUnit*c.cantidad;c.pendiente=c.precioUnit===0;
+  // Aprender el precio corregido manualmente
+  if(c.precioUnit>0) aprenderPrecio(c.nombre, c.precioUnit, c.tipo);
+  saveDB();document.getElementById('m-edit').style.display='none';toast('✅ Actualizado · 🧠 Precio aprendido');render();
+}
+
+/* ═══════════════════════════════════════════════════════
+   GASTOS
+═══════════════════════════════════════════════════════ */
+function pgGastos(){
+  const todos=[...db.gastos].reverse();
+  const th=db.gastos.filter(g=>g.fecha===hoy()).reduce((s,g)=>s+g.monto,0);
+  return`
+  <div class="card">
+    <div class="ct">💸 REGISTRAR GASTO</div>
+    <form id="form-gasto">
+      <div class="g2">
+        <div><label>TIPO</label><select name="tipo"><option>desayuno</option><option>despensa</option><option>herramienta</option><option>transporte</option><option>otros</option></select></div>
+        <div><label>MONTO Gs.</label><input name="monto" type="number" min="0" placeholder="15000" required/></div>
+      </div>
+      <div class="g2" style="margin-bottom:14px">
+        <div><label>FECHA</label><input name="fecha" type="date" value="${hoy()}" required/></div>
+        <div><label>NOTA</label><input name="nota" placeholder="Opcional…"/></div>
+      </div>
+      <button type="submit" class="btn bg bfull">REGISTRAR</button>
+    </form>
+  </div>
+  <div class="card">
+    <div class="ct">📋 GASTOS</div>
+    <div class="sr"><span class="sl">Total hoy</span><span class="sv neg">${fm(th)}</span></div>
+    ${!todos.length?`<div class="empty"><div class="ico">💸</div>Sin gastos</div>`:
+      todos.map(g=>`<div class="li">
+        <div class="lim"><div class="lin">${g.tipo.toUpperCase()}</div><div class="lis">${lbl(g.fecha)}${g.nota?' · '+g.nota:''}</div></div>
+        <div style="display:flex;align-items:center;gap:6px"><div class="lia" style="color:var(--danger)">${fm(g.monto)}</div><button class="btn bred bsm" onclick="delG('${g.id}')">✕</button></div>
+      </div>`).join('')}
+  </div>`;
+}
+function onGasto(e){e.preventDefault();const f=e.target;db.gastos.push({id:uid(),fecha:f.fecha.value,monto:+f.monto.value||0,tipo:f.tipo.value,nota:f.nota.value});saveDB();f.reset();f.fecha.value=hoy();toast('✅ Gasto registrado');render();}
+function delG(id){if(!confirm('¿Eliminar?'))return;db.gastos=db.gastos.filter(g=>g.id!==id);saveDB();render();toast('🗑️');}
+
+/* ═══════════════════════════════════════════════════════
+   VENTAS
+═══════════════════════════════════════════════════════ */
+function pgVentas(){
+  const fechaSel=window.ventaFechaActual||hoy();
+  const vh=db.ventas.find(v=>v.fecha===fechaSel)||{efectivo:0,transferencia:0,pos:0,total:0};
+  return`
+  <div class="card">
+    <div class="ct">💰 REGISTRAR VENTA</div>
+    <form id="form-venta">
+      <div style="margin-bottom:10px">
+        <label>FECHA</label>
+        <input type="date" id="v-fecha" name="fecha" value="${fechaSel}"
+          onchange="window.ventaFechaActual=this.value;actualizarResumenVenta(this.value)"/>
+      </div>
+      <div class="g3" style="margin-bottom:14px">
+        <div><label>EFECTIVO</label><input id="v-ef" name="efectivo" type="number" min="0" placeholder="0"/></div>
+        <div><label>TRANSFERENCIA</label><input id="v-tf" name="transferencia" type="number" min="0" placeholder="0"/></div>
+        <div><label>POS</label><input id="v-ps" name="pos" type="number" min="0" placeholder="0"/></div>
+      </div>
+      <div class="sr" style="margin-bottom:14px">
+        <span class="sl" style="font-size:1rem">A agregar</span>
+        <span class="sv pos" id="v-tot" style="font-size:1.3rem">Gs. 0</span>
+      </div>
+      <button type="submit" class="btn bg bfull">REGISTRAR VENTA</button>
+    </form>
+  </div>
+  <div class="card" id="resumen-venta-dia">
+    <div class="ct">📊 ${lbl(fechaSel)}</div>
+    <div class="sr"><span class="sl">Efectivo</span><span class="sv">${fm(vh.efectivo)}</span></div>
+    <div class="sr"><span class="sl">Transferencia</span><span class="sv">${fm(vh.transferencia)}</span></div>
+    <div class="sr"><span class="sl">POS</span><span class="sv">${fm(vh.pos)}</span></div>
+    <div class="sr"><span class="sl" style="font-weight:700">TOTAL</span>
+      <span class="sv pos" style="font-size:1.2rem">${fm(vh.total)}</span></div>
+  </div>
+  <div class="card">
+    <div class="ct">📋 HISTORIAL</div>
+    ${[...db.ventas].reverse().map(v=>`<div class="li">
+      <div class="lim"><div class="lin">${lbl(v.fecha)}</div>
+        <div class="lis">Ef ${fm(v.efectivo)} · Tf ${fm(v.transferencia)} · POS ${fm(v.pos)}</div></div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="lia">${fm(v.total)}</div>
+        <button class="btn bred bsm" onclick="delV('${v.id}')">✕</button>
+      </div>
+    </div>`).join('')||`<div class="empty"><div class="ico">💰</div>Sin ventas</div>`}
+  </div>`;
+}
+
+function actualizarResumenVenta(fecha){
+  const vh=db.ventas.find(v=>v.fecha===fecha)||{efectivo:0,transferencia:0,pos:0,total:0};
+  const el=document.getElementById('resumen-venta-dia');
+  if(!el)return;
+  el.innerHTML=`
+    <div class="ct">📊 ${lbl(fecha)}</div>
+    <div class="sr"><span class="sl">Efectivo</span><span class="sv">${fm(vh.efectivo)}</span></div>
+    <div class="sr"><span class="sl">Transferencia</span><span class="sv">${fm(vh.transferencia)}</span></div>
+    <div class="sr"><span class="sl">POS</span><span class="sv">${fm(vh.pos)}</span></div>
+    <div class="sr"><span class="sl" style="font-weight:700">TOTAL</span>
+      <span class="sv pos" style="font-size:1.2rem">${fm(vh.total)}</span></div>`;
+}
+
+function calcTotalV(){
+  const e=+document.getElementById('v-ef').value||0,
+        t=+document.getElementById('v-tf').value||0,
+        p=+document.getElementById('v-ps').value||0;
+  document.getElementById('v-tot').textContent=fm(e+t+p);
+}
+
+function onVenta(e){
+  e.preventDefault();const f=e.target;
+  const fecha=f.fecha.value||hoy();
+  const ef=+f.efectivo.value||0,tf=+f.transferencia.value||0,ps=+f.pos.value||0,tot=ef+tf+ps;
+  if(!tot){toast('⚠️ Ingresá al menos un monto');return;}
+  const ex=db.ventas.find(v=>v.fecha===fecha);
+  if(ex){ex.efectivo+=ef;ex.transferencia+=tf;ex.pos+=ps;ex.total+=tot;}
+  else db.ventas.push({id:uid(),fecha,efectivo:ef,transferencia:tf,pos:ps,total:tot});
+  saveDB();f.efectivo.value='';f.transferencia.value='';f.pos.value='';
+  document.getElementById('v-tot').textContent='Gs. 0';
+  actualizarResumenVenta(fecha);
+  toast(`✅ Venta registrada para ${lbl(fecha)}`);
+  render();
+}
+
+function delV(id){
+  if(!confirm('¿Eliminar?'))return;
+  db.ventas=db.ventas.filter(v=>v.id!==id);
+  saveDB();render();toast('🗑️');
+}
+
+/* ═══════════════════════════════════════════════════════
+   RESUMEN
+═══════════════════════════════════════════════════════ */
+function pgResumen(){
+  const s=semana();
+  const cs=db.compras.filter(c=>enSem(c.fecha)&&!c.pendiente&&c.estado==='normal');
+  const desc=db.compras.filter(c=>enSem(c.fecha)&&!c.pendiente&&(c.estado==='dañado'||c.estado==='faltante'));
+  const gs=db.gastos.filter(g=>enSem(g.fecha));
+  const vs=db.ventas.filter(v=>enSem(v.fecha));
+  const tc=cs.reduce((a,c)=>a+c.precioTotal,0);
+  const tdesc=desc.reduce((a,c)=>a+c.precioTotal,0);
+  const deuda=Math.max(0,tc-tdesc);
+  const tg=gs.reduce((a,g)=>a+g.monto,0);
+  const tv=vs.reduce((a,v)=>a+v.total,0);
+  const res=tv-tg-deuda;
+  const pend=db.compras.filter(c=>enSem(c.fecha)&&c.pendiente).length;
+  const porDia={};
+  db.compras.filter(c=>enSem(c.fecha)).forEach(c=>{
+    if(!porDia[c.fecha])porDia[c.fecha]={tot:0,items:[]};
+    porDia[c.fecha].tot+=c.precioTotal;porDia[c.fecha].items.push(c.nombre);
+  });
+  const bHoy=calcBalance(iso=>iso===hoy());
+  return`
+  <!-- Balance rápido hoy -->
+  <div class="card" style="border-color:${bHoy.res>=0?'var(--accent)':'var(--danger)'}">
+    <div class="ct">${bHoy.res>=0?'📈':'📉'} HOY — ${lbl(hoy())}</div>
+    <div class="sgrid" style="margin-bottom:0">
+      <div class="bstat"><div class="l">VENTAS</div><div class="v pos">${fm(bHoy.tv)}</div></div>
+      <div class="bstat"><div class="l">COMPRAS</div><div class="v neg">${fm(bHoy.deuda)}</div></div>
+      <div class="bstat"><div class="l">GASTOS</div><div class="v neg">${fm(bHoy.tg)}</div></div>
+      <div class="bstat"><div class="l">RESULTADO</div>
+        <div class="v ${bHoy.res>=0?'pos':'neg'}">${fm(bHoy.res)}</div></div>
+    </div>
+  </div>
+  <!-- Semana -->
+  <div class="sgrid">
+    <div class="bstat"><div class="l">COMPRAS SEM.</div><div class="v neg">${fm(tc)}</div></div>
+    <div class="bstat"><div class="l">VENTAS SEM.</div><div class="v pos">${fm(tv)}</div></div>
+    <div class="bstat"><div class="l">GASTOS SEM.</div><div class="v neg">${fm(tg)}</div></div>
+    <div class="bstat"><div class="l">RESULTADO</div><div class="v ${res>=0?'pos':'neg'}">${fm(res)}</div></div>
+  </div>
+  <div class="card" style="border-color:var(--warn)">
+    <div class="ct" style="color:var(--warn)">🏦 DEUDA AL PROVEEDOR</div>
+    <div style="text-align:center;padding:10px 0">
+      <div style="font-size:2rem;font-weight:800;color:var(--warn)">${fm(deuda)}</div>
+      ${tdesc>0?`<div style="font-family:var(--mono);font-size:.72rem;color:var(--accent);margin-top:4px">✅ Descuentos por dañados/faltantes: - ${fm(tdesc)}</div>`:''}
+      ${pend?`<div style="font-family:var(--mono);font-size:.72rem;color:var(--purple);margin-top:4px">⏳ + ${pend} producto(s) sin precio aún</div>`:''}
+    </div>
+    ${tdesc>0?`<div style="border-top:1px solid var(--border);padding-top:10px;margin-top:6px">
+      <div class="sr"><span class="sl">Compras brutas</span><span class="sv">${fm(tc)}</span></div>
+      <div class="sr"><span class="sl" style="color:var(--accent)">Descuentos</span><span class="sv pos">- ${fm(tdesc)}</span></div>
+      <div class="sr"><span class="sl" style="font-weight:700">DEUDA NETA</span><span class="sv warn">${fm(deuda)}</span></div>
+    </div>`:''}
+  </div>
+  <div class="card">
+    <div class="ct">📅 COMPRAS POR DÍA · ${lbl(s.ini)} → ${lbl(s.fin)}</div>
+    ${Object.keys(porDia).sort().map(f=>`<div class="sr">
+      <div><div class="sl">${lbl(f)}</div><div style="font-size:.67rem;color:var(--txt3);font-family:var(--mono)">${[...new Set(porDia[f].items)].join(', ')}</div></div>
+      <span class="sv">${fm(porDia[f].tot)}</span>
+    </div>`).join('')||`<div class="empty"><div class="ico">📦</div>Sin datos</div>`}
+  </div>
+  <div class="card">
+    <div class="ct">💸 GASTOS POR TIPO</div>
+    ${(()=>{const t={};gs.forEach(g=>t[g.tipo]=(t[g.tipo]||0)+g.monto);return Object.entries(t).map(([k,v])=>`<div class="sr"><span class="sl">${k}</span><span class="sv neg">${fm(v)}</span></div>`).join('')||`<div class="empty"><div class="ico">💸</div>Sin gastos</div>`;})()}
+  </div>
+  <div class="card">
+    <div class="ct">💰 VENTAS POR MÉTODO</div>
+    ${(()=>{const r=vs.reduce((a,v)=>({ef:a.ef+v.efectivo,tf:a.tf+v.transferencia,ps:a.ps+v.pos}),{ef:0,tf:0,ps:0});
+    return`<div class="sr"><span class="sl">Efectivo</span><span class="sv pos">${fm(r.ef)}</span></div>
+    <div class="sr"><span class="sl">Transferencia</span><span class="sv pos">${fm(r.tf)}</span></div>
+    <div class="sr"><span class="sl">POS</span><span class="sv pos">${fm(r.ps)}</span></div>
+    <div class="sr"><span class="sl" style="font-weight:700">TOTAL</span><span class="sv pos" style="font-size:1.1rem">${fm(r.ef+r.tf+r.ps)}</span></div>`;})()}
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   PENDIENTES
+═══════════════════════════════════════════════════════ */
+function pgPendientes(){
+  const pend=[...db.compras.filter(c=>c.pendiente)].reverse();
+  const spec=[...db.compras.filter(c=>c.estado!=='normal')].reverse();
+  return`
+  <div class="card">
+    <div class="ct">⏳ SIN PRECIO (${pend.length})</div>
+    ${!pend.length?`<div class="empty"><div class="ico">✅</div>¡Todo con precio!</div>`:
+      pend.map(c=>`<div class="li">
+        <div class="lim"><div class="lin">${c.nombre} <span class="badge bpd">SIN PRECIO</span></div><div class="lis">${lbl(c.fecha)} · ${c.cantidad} ${c.tipo}</div></div>
+        <div style="display:flex;gap:5px"><button class="btn bwarn bsm" onclick="openEdit('${c.id}')">✏️ PRECIO</button><button class="btn bred bsm" onclick="delC('${c.id}')">✕</button></div>
+      </div>`).join('')}
+  </div>
+  <div class="card">
+    <div class="ct">🔴 DAÑADOS Y FALTANTES</div>
+    ${!spec.length?`<div class="empty"><div class="ico">✅</div>Sin novedades</div>`:
+      spec.map(c=>`<div class="li">
+        <div class="lim"><div class="lin">${c.nombre} ${c.estado==='dañado'?`<span class="badge brd">DAÑADO</span>`:`<span class="badge bwn">FALTANTE</span>`}</div><div class="lis">${lbl(c.fecha)} · ${c.cantidad} ${c.tipo}</div></div>
+        <div class="lia">${c.precioTotal?fm(c.precioTotal):'—'}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
+/* ═══════════════════════════════════════════════════════
+   TAB MEMORIA — precios aprendidos
+═══════════════════════════════════════════════════════ */
+function pgMemoria(){
+  const keys=Object.keys(priceMemory).sort();
+  const total=keys.length;
+  if(!total) return`
+  <div class="card">
+    <div class="ct">🧠 MEMORIA DE PRECIOS</div>
+    <div class="empty">
+      <div class="ico">🧠</div>
+      <div>Todavía no aprendí ningún precio.</div>
+      <div style="margin-top:8px;opacity:.6">Procesá y confirmá listas para que la app empiece a aprender.</div>
+    </div>
+  </div>`;
+
+  const filas=keys.map(key=>{
+    const mem=priceMemory[key];
+    const trend=mem.precios.length>=2
+      ? mem.precios[mem.precios.length-1].precio > mem.precios[mem.precios.length-2].precio
+        ? '📈' : mem.precios[mem.precios.length-1].precio < mem.precios[mem.precios.length-2].precio
+        ? '📉' : '➡️'
+      : '➡️';
+    const ultimosPrectos=mem.precios.slice(-3).map(p=>`${fm(p.precio)}`).join(' → ');
+    return`<div class="li">
+      <div class="lim">
+        <div class="lin">${key} ${trend}</div>
+        <div class="lis">
+          Último: ${fm(mem.precios[mem.precios.length-1].precio)} ·
+          Rango: ${fm(mem.min)}–${fm(mem.max)} ·
+          ${mem.total} registro(s)
+        </div>
+        <div style="font-family:var(--mono);font-size:.65rem;color:var(--txt3);margin-top:2px">${ultimosPrectos}</div>
+      </div>
+      <button class="btn bred bsm" onclick="olvidarProducto('${key}')">✕</button>
+    </div>`;
+  }).join('');
+
+  return`
+  <div class="card">
+    <div class="ct">🧠 MEMORIA DE PRECIOS (${total} productos)</div>
+    <p style="font-family:var(--mono);font-size:.72rem;color:var(--txt3);margin-bottom:14px;line-height:1.7">
+      La app aprende automáticamente cada vez que confirmás una lista o corregís un precio.
+      Con más de 2 registros por producto, los rangos aprendidos tienen <b style="color:var(--accent)">prioridad</b> sobre los rangos fijos.
+    </p>
+    ${filas}
+    <button class="btn bred bfull" style="margin-top:10px" onclick="limpiarMemoria()">
+      🗑️ BORRAR TODA LA MEMORIA
+    </button>
+  </div>
+
+  <div class="card" style="border-color:var(--accent)">
+    <div class="ct">💾 BACKUP DE DATOS</div>
+    <p style="font-family:var(--mono);font-size:.72rem;color:var(--txt3);margin-bottom:14px;line-height:1.7">
+      Exportá tus datos antes de actualizar la app o para pasarlos a otro dispositivo.
+      Los datos incluyen compras, gastos, ventas y memoria de precios.
+    </p>
+    <button class="btn bblue bfull" style="margin-bottom:8px" onclick="exportarDatos()">
+      📤 EXPORTAR TODOS LOS DATOS
+    </button>
+    <button class="btn bghost bfull" onclick="importarDatos()">
+      📥 IMPORTAR DATOS (restaurar backup)
+    </button>
+  </div>`;
+}
+
+function olvidarProducto(key){
+  if(!confirm('¿Olvidar los precios aprendidos de "'+key+'"?'))return;
+  delete priceMemory[key];
+  localStorage.setItem(KEY_PRECIOS, JSON.stringify(priceMemory));
+  toast('🗑️ Eliminado');render();
+}
+
+function limpiarMemoria(){
+  if(!confirm('¿Borrar TODA la memoria de precios aprendidos?'))return;
+  priceMemory={};
+  localStorage.setItem(KEY_PRECIOS, JSON.stringify(priceMemory));
+  toast('🗑️ Memoria borrada');render();
+}
+
+function exportarDatos(){
+  const backup = JSON.stringify({
+    db, priceMemory,
+    exportado: new Date().toLocaleString('es-PY'),
+    version: 'verdapp-v5'
+  }, null, 2);
+  // Intentar copiar al portapapeles
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(backup)
+      .then(()=>toast('✅ Datos copiados al portapapeles — pegá en WhatsApp o notas'))
+      .catch(()=>descargarBackup(backup));
+  } else {
+    descargarBackup(backup);
+  }
+}
+
+function descargarBackup(texto){
+  const blob = new Blob([texto], {type:'application/json'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'verdapp-backup-'+hoy()+'.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('✅ Backup descargado');
+}
+
+function importarDatos(){
+  const txt = prompt('Pegá el backup aquí:');
+  if(!txt) return;
+  try{
+    const parsed = JSON.parse(txt);
+    if(parsed.db){
+      db = parsed.db;
+      saveDB();
+    }
+    if(parsed.priceMemory){
+      priceMemory = parsed.priceMemory;
+      localStorage.setItem(KEY_PRECIOS, JSON.stringify(priceMemory));
+    }
+    toast('✅ Datos restaurados correctamente');
+    render();
+  } catch(e){
+    toast('❌ Backup inválido — verificá el texto');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   HELPERS DE FECHA
+═══════════════════════════════════════════════════════ */
+function getMes(offset=0){
+  const d=new Date();
+  d.setMonth(d.getMonth()+offset);
+  return {
+    ini: toISO(new Date(d.getFullYear(),d.getMonth(),1)),
+    fin: toISO(new Date(d.getFullYear(),d.getMonth()+1,0)),
+    nombre: d.toLocaleString('es-PY',{month:'long',year:'numeric'})
+  };
+}
+function enMes(iso,offset=0){const m=getMes(offset);return iso>=m.ini&&iso<=m.fin;}
+
+function calcBalance(filtro){
+  const cs   = db.compras.filter(c=>filtro(c.fecha)&&!c.pendiente&&c.estado==='normal');
+  const desc = db.compras.filter(c=>filtro(c.fecha)&&!c.pendiente&&(c.estado==='dañado'||c.estado==='faltante'));
+  const gs   = db.gastos.filter(g=>filtro(g.fecha));
+  const vs   = db.ventas.filter(v=>filtro(v.fecha));
+  const tc   = cs.reduce((a,c)=>a+c.precioTotal,0);
+  const tdesc= desc.reduce((a,c)=>a+c.precioTotal,0);
+  const deuda= Math.max(0,tc-tdesc);
+  const tg   = gs.reduce((a,g)=>a+g.monto,0);
+  const tv   = vs.reduce((a,v)=>a+v.total,0);
+  const res  = tv - tg - deuda;
+  const margenPct = tv>0?Math.round((res/tv)*100):0;
+  return {tc,tdesc,deuda,tg,tv,res,margenPct};
+}
+
+function balanceCard(titulo, b, extra=''){
+  const resColor = b.res>=0?'pos':'neg';
+  const resIcon  = b.res>=0?'📈':'📉';
+  return`
+  <div class="card" style="border-color:${b.res>=0?'var(--accent)':'var(--danger)'}">
+    <div class="ct">${resIcon} ${titulo}</div>
+    <div class="sgrid" style="margin-bottom:12px">
+      <div class="bstat"><div class="l">VENTAS</div><div class="v pos">${fm(b.tv)}</div></div>
+      <div class="bstat"><div class="l">COMPRAS</div><div class="v neg">${fm(b.deuda)}</div></div>
+      <div class="bstat"><div class="l">GASTOS</div><div class="v neg">${fm(b.tg)}</div></div>
+      <div class="bstat"><div class="l">RESULTADO</div><div class="v ${resColor}">${fm(b.res)}</div></div>
+    </div>
+    <div style="background:var(--bg3);border-radius:10px;padding:12px">
+      <div class="sr"><span class="sl">Ventas totales</span><span class="sv pos">${fm(b.tv)}</span></div>
+      <div class="sr"><span class="sl">— Deuda proveedor</span><span class="sv neg">- ${fm(b.deuda)}</span></div>
+      <div class="sr"><span class="sl">— Gastos operativos</span><span class="sv neg">- ${fm(b.tg)}</span></div>
+      <div class="sr" style="border-top:2px solid var(--border);margin-top:4px;padding-top:10px">
+        <span class="sl" style="font-weight:700;font-size:.95rem">GANANCIA NETA</span>
+        <span class="sv ${resColor}" style="font-size:1.3rem;font-weight:800">${fm(b.res)}</span>
+      </div>
+      <div class="sr">
+        <span class="sl">Margen sobre ventas</span>
+        <span class="sv ${resColor}">${b.margenPct}%</span>
+      </div>
+      ${b.tdesc>0?`<div class="sr"><span class="sl" style="color:var(--accent)">Descuentos aplicados</span><span class="sv pos">+ ${fm(b.tdesc)}</span></div>`:''}
+    </div>
+    ${extra}
+  </div>`;
+}
+
+/* ── Balance por día ── */
+function balanceDia(fecha){
+  const b=calcBalance(iso=>iso===fecha);
+  if(!b.tv&&!b.tc&&!b.tg) return`<div style="padding:8px;font-family:var(--mono);font-size:.72rem;color:var(--txt3)">Sin datos para ${lbl(fecha)}</div>`;
+  return balanceCard(lbl(fecha),b);
+}
+
+/* ═══════════════════════════════════════════════════════
+   TAB BALANCE
+═══════════════════════════════════════════════════════ */
+function pgBalance(){
+  const s  = semana();
+  const bHoy = calcBalance(iso=>iso===hoy());
+  const bSem = calcBalance(enSem);
+  const bMes = calcBalance(iso=>enMes(iso,0));
+  const bMesAnt = calcBalance(iso=>enMes(iso,-1));
+
+  // Balance por día de la semana actual
+  const diasSem = [];
+  for(let i=0;i<7;i++){
+    const d=new Date(s.ini+'T12:00');
+    d.setDate(d.getDate()+i);
+    diasSem.push(toISO(d));
+  }
+
+  const filaDia = diasSem.map(f=>{
+    const b=calcBalance(iso=>iso===f);
+    const tieneData=b.tv>0||b.tc>0||b.tg>0;
+    if(!tieneData) return`<div class="sr" style="opacity:.35">
+      <span class="sl">${lbl(f)}</span>
+      <span class="sv" style="font-size:.75rem;color:var(--txt3)">sin datos</span>
+    </div>`;
+    const resColor=b.res>=0?'pos':'neg';
+    const icon=b.res>=0?'📈':'📉';
+    return`<div class="sr">
+      <div>
+        <div class="sl">${lbl(f)} ${icon}</div>
+        <div style="font-family:var(--mono);font-size:.67rem;color:var(--txt3)">
+          V: ${fm(b.tv)} · C: ${fm(b.deuda)} · G: ${fm(b.tg)}
+        </div>
+      </div>
+      <span class="sv ${resColor}">${fm(b.res)}</span>
+    </div>`;
+  }).join('');
+
+  return`
+  <!-- HOY -->
+  ${balanceCard('HOY — '+lbl(hoy()), bHoy)}
+
+  <!-- SEMANA -->
+  ${balanceCard('SEMANA · '+lbl(s.ini)+' → '+lbl(s.fin), bSem,
+    `<div style="margin-top:12px">
+      <div style="font-family:var(--mono);font-size:.7rem;color:var(--txt3);margin-bottom:8px;letter-spacing:1px">DETALLE POR DÍA</div>
+      ${filaDia}
+    </div>`
+  )}
+
+  <!-- MES ACTUAL -->
+  ${balanceCard('MES ACTUAL — '+getMes(0).nombre, bMes)}
+
+  <!-- MES ANTERIOR -->
+  ${balanceCard('MES ANTERIOR — '+getMes(-1).nombre, bMesAnt)}
+  `;
+}
+
+/* ═══════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════ */
+loadAll();
+updateHeader();
+render();
+setInterval(updateHeader,60000);
+// Verificar alertas de variación de precio al iniciar
+setTimeout(checkAlertasPrecios, 1000);
+// SW registrado abajo
+</script>
+
+<script>
+// Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => console.log('SW registrado', reg.scope))
+      .catch(err => console.error('SW error', err));
+  });
+}
+
+// Capturar evento de instalación PWA
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  // Mostrar botón instalar en el header
+  const btn = document.getElementById('install-btn');
+  if(btn) btn.style.display = 'flex';
+  console.log('PWA: listo para instalar');
+});
+
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  const btn = document.getElementById('install-btn');
+  if(btn) btn.style.display = 'none';
+  console.log('PWA instalada');
+});
+
+function instalarApp(){
+  if(!deferredPrompt){ 
+    alert('Para instalar:\n1. Tocá el menú ⋮ de Chrome\n2. Buscá "Instalar app" o "Agregar a pantalla de inicio"');
+    return;
+  }
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(r => {
+    console.log('Usuario eligió:', r.outcome);
+    deferredPrompt = null;
+  });
+}
+</script>
+</body>
+
+</html>
