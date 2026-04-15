@@ -1,5 +1,5 @@
 {
-  "name": "VerdApp – Gestión Verdulería",
+  "name": "VerdApp",
   "short_name": "VerdApp",
   "description": "Gestión de verdulería: pesos, precios, compras y resumen semanal",
   "start_url": "./index.html",
@@ -22,10 +22,5 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ],
-  "categories": [
-    "business",
-    "finance",
-    "productivity"
   ]
 }
