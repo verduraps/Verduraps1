@@ -167,6 +167,7 @@
     <button class="tab"     onclick="go('resumen')">📊 RESUMEN</button>
     <button class="tab"     onclick="go('pendientes')">⏳ PEND.</button>
     <button class="tab"     onclick="go('balance')">📈 BALANCE</button>
+    <button class="tab"     onclick="go('mayorista')">🏪 MAYOR.</button>
     <button class="tab"     onclick="go('memoria')">🧠 MEMORIA</button>
   </nav>
   <div id="pg"></div>
@@ -217,11 +218,13 @@ const WA_NOMBRES = ['0991378503','0991656990','0983493424'];
 /* ═══════════════════════════════════════════════════════
    BASE DE DATOS LOCAL
 ═══════════════════════════════════════════════════════ */
-const KEY_GESTION = 'verdapp_v4';
-const KEY_PESOS   = 'verdapp_pesos_v2';
-const KEY_PRECIOS = 'verdapp_precios_v1'; // memoria de precios aprendidos
+const KEY_GESTION  = 'verdapp_v4';
+const KEY_PESOS    = 'verdapp_pesos_v2';
+const KEY_PRECIOS  = 'verdapp_precios_v1';
+const KEY_MAYORISTA= 'verdapp_mayorista_v1'; // clientes, pedidos, reclamos
 
 let db = {compras:[],gastos:[],ventas:[]};
+let dbMay = {clientes:[], pedidos:[], reclamos:[]}; // datos mayoristas
 let pesoRows = []; // [{producto, pesoTotal, pesoCaja, pesoNeto, precioCompra, precioVenta}]
 let margen = 1.3;
 // Memoria de precios: {nombreNorm: {precios:[...ultimos 10], min, max, avg, total_registros}}
@@ -238,6 +241,7 @@ function loadAll() {
     }
   } catch(e){}
   try { const r=localStorage.getItem(KEY_PRECIOS); if(r) priceMemory=JSON.parse(r); } catch(e){}
+  try { const r=localStorage.getItem(KEY_MAYORISTA); if(r) dbMay=JSON.parse(r); } catch(e){}
   if(!pesoRows.length) initPesoRows();
 }
 
@@ -354,6 +358,7 @@ function initPesoRows() {
 }
 
 function saveDB()   { localStorage.setItem(KEY_GESTION, JSON.stringify(db)); }
+function saveDBMay(){ localStorage.setItem(KEY_MAYORISTA, JSON.stringify(dbMay)); }
 function savePesos(){
   // Recalcular todo antes de guardar
   pesoRows = pesoRows.map(r=>({...r,
@@ -561,7 +566,7 @@ function updateHdr(){
 let tab='pesos';
 function go(t){
   tab=t;
-  const ns=['pesos','ia','compras','gastos','ventas','resumen','pendientes','balance','memoria'];
+  const ns=['pesos','ia','compras','gastos','ventas','resumen','pendientes','balance','mayorista','memoria'];
   document.querySelectorAll('.tab').forEach((b,i)=>b.classList.toggle('on',ns[i]===t));
   render();
 }
@@ -576,6 +581,7 @@ function render(){
   else if(tab==='resumen')p.innerHTML=pgResumen();
   else if(tab==='pendientes')p.innerHTML=pgPendientes();
   else if(tab==='balance')p.innerHTML=pgBalance();
+  else if(tab==='mayorista')p.innerHTML=pgMayorista();
   else if(tab==='memoria')p.innerHTML=pgMemoria();
   bindForms();
 }
@@ -1960,6 +1966,501 @@ function pgBalance(){
   <!-- MES ANTERIOR -->
   ${balanceCard('MES ANTERIOR — '+getMes(-1).nombre, bMesAnt)}
   `;
+}
+
+/* ═══════════════════════════════════════════════════════
+   MÓDULO MAYORISTA
+═══════════════════════════════════════════════════════ */
+
+// ── Estado del pedido en curso ──
+let pedidoActual = {clienteId:null, items:[], fecha:hoy()};
+
+function pgMayorista(){
+  const vista = window.mayVista || 'menu';
+  if(vista==='clientes')   return pgMayClientes();
+  if(vista==='nuevo')      return pgMayNuevoPedido();
+  if(vista==='historial')  return pgMayHistorial();
+  if(vista==='reclamos')   return pgMayReclamos();
+  if(vista==='resumen')    return pgMayResumen();
+  if(vista==='proveedor')  return pgMayProveedor();
+  return pgMayMenu();
+}
+
+function mayVista(v){ window.mayVista=v; render(); }
+
+// ── MENÚ PRINCIPAL ──
+function pgMayMenu(){
+  const hoyPedidos = dbMay.pedidos.filter(p=>p.fecha===hoy());
+  const totalHoy = hoyPedidos.reduce((s,p)=>s+p.total,0);
+  const reclamosHoy = dbMay.reclamos.filter(r=>r.fecha===hoy()).reduce((s,r)=>s+r.monto,0);
+  return`
+  <div class="card" style="border-color:var(--accent)">
+    <div class="ct">🏪 VENTAS MAYORISTAS</div>
+    <div class="sgrid" style="margin-bottom:14px">
+      <div class="bstat"><div class="l">PEDIDOS HOY</div><div class="v pos">${fm(totalHoy)}</div></div>
+      <div class="bstat"><div class="l">RECLAMOS HOY</div><div class="v neg">- ${fm(reclamosHoy)}</div></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <button class="btn bg bfull" onclick="iniciarNuevoPedido()">📋 NUEVO PEDIDO</button>
+      <button class="btn bghost bfull" onclick="mayVista('historial')">📅 HISTORIAL DE PEDIDOS</button>
+      <button class="btn bghost bfull" onclick="mayVista('reclamos')">🔴 REGISTRAR RECLAMO</button>
+      <button class="btn bghost bfull" onclick="mayVista('resumen')">📊 RESUMEN POR PERÍODO</button>
+      <button class="btn bghost bfull" onclick="mayVista('clientes')">👥 CLIENTES</button>
+      <button class="btn bblue bfull" onclick="mayVista('proveedor')">🔄 LISTA PROVEEDOR</button>
+    </div>
+  </div>`;
+}
+
+// ── CLIENTES ──
+function pgMayClientes(){
+  return`
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="ct" style="margin-bottom:0">👥 CLIENTES</div>
+      <button class="btn bghost bsm" onclick="mayVista('menu')">← Volver</button>
+    </div>
+    <div class="g2" style="margin-bottom:10px">
+      <div><label>NOMBRE</label><input id="cli-nom" placeholder="Nombre del cliente"/></div>
+      <div><label>WHATSAPP</label><input id="cli-wa" type="tel" placeholder="0991123456"/></div>
+    </div>
+    <button class="btn bg bfull" style="margin-bottom:14px" onclick="agregarCliente()">+ AGREGAR CLIENTE</button>
+    ${!dbMay.clientes.length?`<div class="empty"><div class="ico">👥</div>Sin clientes aún</div>`:
+      dbMay.clientes.map(cl=>`<div class="li">
+        <div class="lim"><div class="lin">${cl.nombre}</div><div class="lis">📱 ${cl.whatsapp||'Sin número'}</div></div>
+        <div style="display:flex;gap:6px">
+          <button class="btn bg bsm" onclick="iniciarPedidoCliente('${cl.id}')">📋 PEDIDO</button>
+          <button class="btn bred bsm" onclick="eliminarCliente('${cl.id}')">✕</button>
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function agregarCliente(){
+  const nom=document.getElementById('cli-nom').value.trim();
+  if(!nom){toast('⚠️ Ingresá el nombre');return;}
+  const wa=document.getElementById('cli-wa').value.trim();
+  dbMay.clientes.push({id:uid(),nombre:nom,whatsapp:wa});
+  saveDBMay();toast('✅ Cliente agregado');render();
+}
+
+function eliminarCliente(id){
+  if(!confirm('¿Eliminar cliente?'))return;
+  dbMay.clientes=dbMay.clientes.filter(c=>c.id!==id);
+  saveDBMay();render();toast('🗑️ Eliminado');
+}
+
+// ── NUEVO PEDIDO ──
+function iniciarNuevoPedido(){
+  if(!dbMay.clientes.length){
+    toast('⚠️ Primero agregá un cliente');mayVista('clientes');return;
+  }
+  pedidoActual={clienteId:null,items:[],fecha:hoy()};
+  mayVista('nuevo');
+}
+
+function iniciarPedidoCliente(id){
+  pedidoActual={clienteId:id,items:[],fecha:hoy()};
+  mayVista('nuevo');
+}
+
+function pgMayNuevoPedido(){
+  const cliente=dbMay.clientes.find(c=>c.id===pedidoActual.clienteId);
+  const total=pedidoActual.items.reduce((s,i)=>s+i.total,0);
+  const itemsHtml=pedidoActual.items.map((it,i)=>`
+    <div class="li">
+      <div class="lim">
+        <div class="lin">${it.nombre}</div>
+        <div class="lis">${it.cantidad} ${it.tipo} × ${fm(it.precio)}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div class="lia">${fm(it.total)}</div>
+        <button class="btn bred bsm" onclick="quitarItemPedido(${i})">✕</button>
+      </div>
+    </div>`).join('');
+  return`
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="ct" style="margin-bottom:0">📋 NUEVO PEDIDO</div>
+      <button class="btn bghost bsm" onclick="mayVista('menu')">← Volver</button>
+    </div>
+
+    <!-- Cliente -->
+    <div style="margin-bottom:12px">
+      <label>CLIENTE</label>
+      <select id="ped-cliente" onchange="pedidoActual.clienteId=this.value">
+        <option value="">— Elegir cliente —</option>
+        ${dbMay.clientes.map(cl=>`<option value="${cl.id}" ${pedidoActual.clienteId===cl.id?'selected':''}>${cl.nombre}</option>`).join('')}
+      </select>
+    </div>
+
+    <div style="margin-bottom:12px">
+      <label>FECHA</label>
+      <input type="date" value="${pedidoActual.fecha}" onchange="pedidoActual.fecha=this.value"/>
+    </div>
+
+    <!-- Agregar producto -->
+    <div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:12px">
+      <div class="ct" style="margin-bottom:10px;font-size:.68rem">➕ AGREGAR PRODUCTO</div>
+      <div class="g2">
+        <div><label>PRODUCTO</label>
+          <input id="ped-nom" list="prod-list" placeholder="Nombre..."/>
+          <datalist id="prod-list">
+            ${PRODUCTOS_DEFAULT.map(p=>`<option value="${p}">`).join('')}
+          </datalist>
+        </div>
+        <div><label>TIPO</label>
+          <select id="ped-tipo"><option>caja</option><option>kilo</option><option>unidad</option></select>
+        </div>
+      </div>
+      <div class="g2" style="margin-bottom:10px">
+        <div><label>CANTIDAD</label><input id="ped-cant" type="number" min="1" placeholder="1"/></div>
+        <div><label>PRECIO Gs.</label><input id="ped-precio" type="number" placeholder="150000"/></div>
+      </div>
+      <button class="btn bg bfull" onclick="agregarItemPedido()">+ AGREGAR</button>
+    </div>
+
+    <!-- Items -->
+    ${pedidoActual.items.length?itemsHtml:`<div class="empty"><div class="ico">📦</div>Sin productos aún</div>`}
+
+    <!-- Total -->
+    ${pedidoActual.items.length?`
+    <div style="background:var(--bg3);border-radius:10px;padding:12px;margin-top:12px">
+      <div class="sr"><span class="sl" style="font-weight:700">TOTAL PEDIDO</span>
+        <span class="sv pos" style="font-size:1.3rem">${fm(total)}</span></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn bg bfull" onclick="confirmarPedido()">✅ CONFIRMAR Y ENVIAR</button>
+      <button class="btn bghost bsm" onclick="imprimirPedido()">🖨️</button>
+    </div>`:''}
+  </div>`;
+}
+
+function agregarItemPedido(){
+  const nom=document.getElementById('ped-nom').value.trim();
+  const cant=+document.getElementById('ped-cant').value||1;
+  const precio=+document.getElementById('ped-precio').value||0;
+  const tipo=document.getElementById('ped-tipo').value;
+  if(!nom){toast('⚠️ Ingresá el producto');return;}
+  if(!precio){toast('⚠️ Ingresá el precio');return;}
+  pedidoActual.items.push({nombre:nom,cantidad:cant,tipo,precio,total:cant*precio});
+  document.getElementById('ped-nom').value='';
+  document.getElementById('ped-cant').value='';
+  document.getElementById('ped-precio').value='';
+  render();
+}
+
+function quitarItemPedido(i){
+  pedidoActual.items.splice(i,1);render();
+}
+
+function confirmarPedido(){
+  if(!pedidoActual.clienteId){toast('⚠️ Elegí un cliente');return;}
+  if(!pedidoActual.items.length){toast('⚠️ Agregá productos');return;}
+  const cliente=dbMay.clientes.find(c=>c.id===pedidoActual.clienteId);
+  const total=pedidoActual.items.reduce((s,i)=>s+i.total,0);
+  const pedido={
+    id:uid(), fecha:pedidoActual.fecha,
+    clienteId:pedidoActual.clienteId,
+    clienteNombre:cliente.nombre,
+    items:[...pedidoActual.items],
+    total, enviado:false
+  };
+  dbMay.pedidos.push(pedido);
+  saveDBMay();
+  // Enviar por WhatsApp
+  const msg=buildMsgPedido(pedido,cliente);
+  if(cliente.whatsapp){
+    const num='595'+cliente.whatsapp.replace(/^0/,'');
+    window.open('https://wa.me/'+num+'?text='+encodeURIComponent(msg),'_blank');
+  } else {
+    // Copiar al portapapeles
+    navigator.clipboard&&navigator.clipboard.writeText(msg);
+    toast('✅ Pedido guardado — copiado al portapapeles');
+  }
+  pedidoActual={clienteId:null,items:[],fecha:hoy()};
+  mayVista('historial');
+}
+
+function buildMsgPedido(pedido, cliente){
+  const lines=[
+    `📦 PEDIDO — ${cliente.nombre}`,
+    `📅 ${lbl(pedido.fecha)}`,
+    `─────────────────────`
+  ];
+  pedido.items.forEach(it=>{
+    lines.push(`${it.nombre}: ${it.cantidad} ${it.tipo} × ${fm(it.precio)} = ${fm(it.total)}`);
+  });
+  lines.push(`─────────────────────`);
+  lines.push(`💰 TOTAL: ${fm(pedido.total)}`);
+  // Código oculto para importar
+  const codigo = btoa(JSON.stringify({v:'VP1',items:pedido.items,fecha:pedido.fecha})).slice(0,8).toUpperCase();
+  lines.push(`\n🔑 REF: VP-${codigo}`);
+  return lines.join('\n');
+}
+
+function imprimirPedido(){
+  if(!pedidoActual.clienteId||!pedidoActual.items.length){toast('⚠️ Completá el pedido primero');return;}
+  const cliente=dbMay.clientes.find(c=>c.id===pedidoActual.clienteId);
+  const total=pedidoActual.items.reduce((s,i)=>s+i.total,0);
+  const win=window.open('','_blank');
+  win.document.write(`<html><head><title>Pedido ${cliente.nombre}</title>
+  <style>body{font-family:monospace;padding:20px;font-size:14px}
+  h2{text-align:center}hr{border:1px solid #000}
+  .row{display:flex;justify-content:space-between;padding:4px 0}
+  .total{font-size:18px;font-weight:bold;text-align:right;margin-top:10px}
+  </style></head><body>
+  <h2>PEDIDO — ${cliente.nombre}</h2>
+  <p style="text-align:center">${lbl(pedidoActual.fecha)}</p><hr>
+  ${pedidoActual.items.map(it=>`<div class="row"><span>${it.nombre} (${it.cantidad} ${it.tipo})</span><span>${fm(it.total)}</span></div>`).join('')}
+  <hr><div class="total">TOTAL: ${fm(total)}</div>
+  <script>window.print();window.close();<\/script></body></html>`);
+  win.document.close();
+}
+
+// ── HISTORIAL ──
+function pgMayHistorial(){
+  const pedidos=[...dbMay.pedidos].reverse();
+  return`
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="ct" style="margin-bottom:0">📅 HISTORIAL DE PEDIDOS</div>
+      <button class="btn bghost bsm" onclick="mayVista('menu')">← Volver</button>
+    </div>
+    <input type="date" id="hist-fecha" style="margin-bottom:10px" oninput="render()"
+      placeholder="Filtrar por fecha"/>
+    ${!pedidos.length?`<div class="empty"><div class="ico">📋</div>Sin pedidos aún</div>`:
+      pedidos.filter(p=>{
+        const f=document.getElementById&&document.getElementById('hist-fecha')&&document.getElementById('hist-fecha').value;
+        return !f||p.fecha===f;
+      }).map(p=>{
+        const recl=dbMay.reclamos.filter(r=>r.pedidoId===p.id).reduce((s,r)=>s+r.monto,0);
+        return`<div class="li">
+          <div class="lim">
+            <div class="lin">${p.clienteNombre}</div>
+            <div class="lis">${lbl(p.fecha)} · ${p.items.length} productos</div>
+          </div>
+          <div style="text-align:right">
+            <div class="lia">${fm(p.total)}</div>
+            ${recl?`<div style="font-family:var(--mono);font-size:.67rem;color:var(--danger)">- ${fm(recl)}</div>`:''}
+          </div>
+        </div>`;
+      }).join('')||`<div class="empty"><div class="ico">📋</div>Sin pedidos para esa fecha</div>`}
+  </div>`;
+}
+
+// ── RECLAMOS ──
+function pgMayReclamos(){
+  return`
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="ct" style="margin-bottom:0">🔴 REGISTRAR RECLAMO</div>
+      <button class="btn bghost bsm" onclick="mayVista('menu')">← Volver</button>
+    </div>
+    <div class="g2" style="margin-bottom:10px">
+      <div><label>CLIENTE</label>
+        <select id="recl-cli">
+          <option value="">— Elegir —</option>
+          ${dbMay.clientes.map(c=>`<option value="${c.id}">${c.nombre}</option>`).join('')}
+        </select>
+      </div>
+      <div><label>FECHA</label><input id="recl-fecha" type="date" value="${hoy()}"/></div>
+    </div>
+    <div class="g2" style="margin-bottom:10px">
+      <div><label>PRODUCTO</label><input id="recl-prod" placeholder="Ej: Tomate"/></div>
+      <div><label>MONTO Gs.</label><input id="recl-monto" type="number" placeholder="50000"/></div>
+    </div>
+    <div style="margin-bottom:14px">
+      <label>MOTIVO</label>
+      <input id="recl-motivo" placeholder="Podrido, dañado, faltante..."/>
+    </div>
+    <button class="btn bred bfull" style="margin-bottom:14px" onclick="guardarReclamo()">
+      🔴 REGISTRAR RECLAMO
+    </button>
+    <div class="ct" style="font-size:.68rem">ÚLTIMOS RECLAMOS</div>
+    ${!dbMay.reclamos.length?`<div class="empty"><div class="ico">✅</div>Sin reclamos</div>`:
+      [...dbMay.reclamos].reverse().slice(0,10).map(r=>`<div class="li">
+        <div class="lim">
+          <div class="lin">${r.clienteNombre} — ${r.producto}</div>
+          <div class="lis">${lbl(r.fecha)} · ${r.motivo}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="lia" style="color:var(--danger)">- ${fm(r.monto)}</div>
+          <button class="btn bred bsm" onclick="eliminarReclamo('${r.id}')">✕</button>
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function guardarReclamo(){
+  const cliId=document.getElementById('recl-cli').value;
+  const prod=document.getElementById('recl-prod').value.trim();
+  const monto=+document.getElementById('recl-monto').value||0;
+  const motivo=document.getElementById('recl-motivo').value.trim()||'dañado';
+  const fecha=document.getElementById('recl-fecha').value||hoy();
+  if(!cliId){toast('⚠️ Elegí un cliente');return;}
+  if(!prod){toast('⚠️ Ingresá el producto');return;}
+  if(!monto){toast('⚠️ Ingresá el monto');return;}
+  const cliente=dbMay.clientes.find(c=>c.id===cliId);
+  dbMay.reclamos.push({id:uid(),fecha,clienteId:cliId,clienteNombre:cliente.nombre,producto:prod,monto,motivo});
+  saveDBMay();toast('✅ Reclamo registrado');render();
+}
+
+function eliminarReclamo(id){
+  if(!confirm('¿Eliminar reclamo?'))return;
+  dbMay.reclamos=dbMay.reclamos.filter(r=>r.id!==id);
+  saveDBMay();render();toast('🗑️');
+}
+
+// ── RESUMEN POR PERÍODO ──
+function pgMayResumen(){
+  const s=semana();
+  return`
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="ct" style="margin-bottom:0">📊 RESUMEN MAYORISTA</div>
+      <button class="btn bghost bsm" onclick="mayVista('menu')">← Volver</button>
+    </div>
+    <div class="g2" style="margin-bottom:14px">
+      <div><label>DESDE</label><input type="date" id="res-ini" value="${s.ini}"/></div>
+      <div><label>HASTA</label><input type="date" id="res-fin" value="${s.fin}"/></div>
+    </div>
+    <button class="btn bg bfull" style="margin-bottom:14px" onclick="calcResumenMay()">
+      📊 VER RESUMEN
+    </button>
+    <div id="res-may-result"></div>
+  </div>`;
+}
+
+function calcResumenMay(){
+  const ini=document.getElementById('res-ini').value;
+  const fin=document.getElementById('res-fin').value;
+  if(!ini||!fin){toast('⚠️ Elegí el período');return;}
+
+  const pedidos=dbMay.pedidos.filter(p=>p.fecha>=ini&&p.fecha<=fin);
+  const reclamos=dbMay.reclamos.filter(r=>r.fecha>=ini&&r.fecha<=fin);
+  const totalVentas=pedidos.reduce((s,p)=>s+p.total,0);
+  const totalReclamos=reclamos.reduce((s,r)=>s+r.monto,0);
+  const neto=totalVentas-totalReclamos;
+
+  // Por cliente
+  const porCliente={};
+  pedidos.forEach(p=>{
+    if(!porCliente[p.clienteNombre])porCliente[p.clienteNombre]={ventas:0,reclamos:0};
+    porCliente[p.clienteNombre].ventas+=p.total;
+  });
+  reclamos.forEach(r=>{
+    if(!porCliente[r.clienteNombre])porCliente[r.clienteNombre]={ventas:0,reclamos:0};
+    porCliente[r.clienteNombre].reclamos+=r.monto;
+  });
+
+  const cliHtml=Object.entries(porCliente).map(([nom,d])=>`
+    <div class="sr">
+      <div><div class="sl">${nom}</div>
+        ${d.reclamos?`<div style="font-family:var(--mono);font-size:.67rem;color:var(--danger)">Reclamos: - ${fm(d.reclamos)}</div>`:''}
+      </div>
+      <span class="sv pos">${fm(d.ventas-d.reclamos)}</span>
+    </div>`).join('');
+
+  document.getElementById('res-may-result').innerHTML=`
+    <div style="background:var(--bg3);border-radius:10px;padding:14px;margin-bottom:12px">
+      <div class="sr"><span class="sl">Período</span><span class="sv" style="font-size:.8rem">${lbl(ini)} → ${lbl(fin)}</span></div>
+      <div class="sr"><span class="sl">Total pedidos (${pedidos.length})</span><span class="sv pos">${fm(totalVentas)}</span></div>
+      <div class="sr"><span class="sl">Descuentos reclamos</span><span class="sv neg">- ${fm(totalReclamos)}</span></div>
+      <div class="sr" style="border-top:2px solid var(--border);padding-top:10px;margin-top:4px">
+        <span class="sl" style="font-weight:700">NETO DEL PERÍODO</span>
+        <span class="sv pos" style="font-size:1.2rem">${fm(neto)}</span>
+      </div>
+    </div>
+    <div class="ct" style="font-size:.68rem">POR CLIENTE</div>
+    ${cliHtml||'<div class="empty"><div class="ico">👥</div>Sin datos</div>'}`;
+}
+
+// ── LISTA PROVEEDOR ──
+function pgMayProveedor(){
+  return`
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div class="ct" style="margin-bottom:0">🔄 LISTA DEL PROVEEDOR</div>
+      <button class="btn bghost bsm" onclick="mayVista('menu')">← Volver</button>
+    </div>
+    <p style="font-family:var(--mono);font-size:.72rem;color:var(--txt3);margin-bottom:12px;line-height:1.7">
+      El proveedor puede enviarte su lista con un código especial.
+      Pegá el mensaje acá para importar todos los productos automáticamente.
+    </p>
+    <textarea id="prov-txt" style="min-height:120px"
+      placeholder="Pegá aquí el mensaje del proveedor..."></textarea>
+    <button class="btn bblue bfull" style="margin-top:10px" onclick="importarListaProveedor()">
+      📥 IMPORTAR LISTA
+    </button>
+    <div id="prov-result" style="margin-top:10px"></div>
+    <div style="margin-top:20px;background:var(--bg3);border-radius:10px;padding:14px">
+      <div class="ct" style="font-size:.68rem;margin-bottom:8px">📤 GENERAR MI LISTA PARA ENVIAR</div>
+      <p style="font-family:var(--mono);font-size:.72rem;color:var(--txt3);margin-bottom:10px;line-height:1.7">
+        Si vos también querés enviarle tu lista a alguien:
+      </p>
+      <button class="btn bghost bfull" onclick="generarListaParaEnviar()">
+        📲 GENERAR Y ENVIAR POR WHATSAPP
+      </button>
+    </div>
+  </div>`;
+}
+
+function importarListaProveedor(){
+  const txt=document.getElementById('prov-txt').value.trim();
+  if(!txt){toast('⚠️ Pegá el mensaje del proveedor');return;}
+
+  // Buscar código VP- en el mensaje
+  const codigoMatch=txt.match(/VP-([A-Z0-9]{8})/);
+  if(codigoMatch){
+    try{
+      const decoded=JSON.parse(atob(codigoMatch[1]));
+      // Importar items directamente al tab IA para procesar
+      if(decoded.items){
+        window.fechaCargaActual=decoded.fecha||hoy();
+        prevTexto=decoded.items.map(it=>({
+          nombre:it.nombre,cantidad:it.cantidad,tipo:it.tipo||'unidad',
+          precioUnit:it.precio,precioTotal:it.precio*it.cantidad,
+          pendiente:false,estado:'normal',dia:null,confianza:'alta'
+        }));
+        mayVista('menu');
+        go('ia');
+        setTimeout(()=>{
+          mostrarPrevTexto(prevTexto);
+          document.getElementById('txt-res').scrollIntoView({behavior:'smooth'});
+        },300);
+        toast('✅ Lista importada — revisá en tab IA');
+        return;
+      }
+    }catch(e){}
+  }
+
+  // Sin código — procesar como texto normal
+  window.fechaCargaActual=hoy();
+  prevTexto=parsearLocal(txt);
+  mayVista('menu');
+  go('ia');
+  setTimeout(()=>{
+    mostrarPrevTexto(prevTexto);
+    document.getElementById('txt-res').scrollIntoView({behavior:'smooth'});
+  },300);
+  toast('✅ Lista procesada — revisá en tab IA');
+}
+
+function generarListaParaEnviar(){
+  const activos=pesoRows.filter(r=>r.pesoTotal&&r.precioCompra);
+  if(!activos.length){toast('⚠️ Cargá pesos y precios primero');return;}
+  const items=activos.map(r=>({nombre:r.producto,cantidad:r.pesoTotal,tipo:'kilo',precio:r.precioCompra}));
+  const codigo=btoa(JSON.stringify({v:'VP1',items,fecha:hoy()})).slice(0,8).toUpperCase();
+  const lines=[
+    `📦 LISTA DE PRECIOS`,
+    `📅 ${lbl(hoy())}`,
+    `─────────────────────`,
+    ...activos.map(r=>`${r.producto}: ${r.pesoTotal}kg — ${fm(r.precioCompra)}`),
+    `─────────────────────`,
+    `\n🔑 VP-${codigo}`
+  ];
+  const msg=lines.join('\n');
+  navigator.clipboard&&navigator.clipboard.writeText(msg).then(()=>toast('✅ Lista copiada — pegala en WhatsApp'));
 }
 
 /* ═══════════════════════════════════════════════════════
